@@ -1,0 +1,15 @@
+# Core Geospatial Libraries
+
+rasterio
+geopandas
+shapely
+fiona
+
+# Data Processing
+
+pandas
+numpy
+
+# Web/API
+
+requests
