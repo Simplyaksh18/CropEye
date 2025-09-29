@@ -1,12 +1,26 @@
 {
   "name": "cropeye",
   "version": "1.0.0",
+<<<<<<< HEAD
   "description": "��#\u0000 \u0000C\u0000r\u0000o\u0000p\u0000E\u0000y\u0000e\u0000\r\u0000 \u0000",
+=======
+  "description": "🌿 CropEye: Predictive GIS Dashboard for Precision Agriculture Recruiter Summary: A predictive GIS dashboard for precision agriculture. It monitors Land Health (NDVI), Pest Risk, and Weather using advanced geospatial analysis. The project validates a scalable, production-ready architecture by demonstrating real-time data ingestion and processing capabilities with open satellite and synthetic sensor data.",
+>>>>>>> 1b1082a51acaa603acc7f299b61b19e7c39e11c7
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
+<<<<<<< HEAD
   "license": "ISC"
+=======
+  "license": "ISC",
+  "dependencies": {
+    "@types/leaflet": "^1.9.20",
+    "leaflet": "^1.9.4",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  }
+>>>>>>> 1b1082a51acaa603acc7f299b61b19e7c39e11c7
 }
