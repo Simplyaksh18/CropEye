@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+
+# Test artifacts
+*.json
+!/backend/package.json
+!/backend/package-lock.json
+!/frontend/package.json
+!/frontend/package-lock.json
+
+# Node
+frontend/node_modules/
+frontend/build/
+
+# SQLite Database
+backend/cropeye.db

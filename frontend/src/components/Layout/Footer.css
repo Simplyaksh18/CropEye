@@ -1,0 +1,111 @@
+.layout-footer {
+  margin-top: 2rem;
+  padding: clamp(1.8rem, 3vw, 2.4rem);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  background: linear-gradient(
+    135deg,
+    rgba(18, 45, 38, 0.45),
+    rgba(12, 32, 24, 0.65)
+  );
+  color: var(--text-secondary);
+  border-radius: 20px 20px 0 0;
+}
+
+.theme-light .layout-footer {
+  background: linear-gradient(
+    135deg,
+    rgba(170, 212, 182, 0.5),
+    rgba(255, 255, 255, 0.92)
+  );
+  color: var(--text-primary);
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: clamp(1rem, 2.5vw, 2rem);
+  align-items: start;
+}
+
+.footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-width: 260px;
+}
+
+.footer-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.footer-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.88rem;
+}
+
+.footer-column h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-primary);
+}
+
+.footer-column a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer-column a:hover,
+.footer-column a:focus {
+  color: var(--accent);
+}
+
+.footer-column ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.35rem;
+  color: var(--text-secondary);
+}
+
+.footer-note {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.footer-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.footer-bottom a {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.footer-bottom a:hover,
+.footer-bottom a:focus {
+  color: var(--accent);
+  text-decoration: underline;
+}
