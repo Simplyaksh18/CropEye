@@ -1,0 +1,28 @@
+# Soil Analysis Module Requirements
+# Install with: pip install -r requirements_soil_analysis.txt
+
+# Core dependencies
+flask==2.3.3
+flask-cors==4.0.0
+requests==2.31.0
+numpy>=1.26
+python-dotenv==1.0.0
+
+# Geospatial and data analysis
+rasterio==1.3.8
+geopandas==0.13.2
+shapely==2.0.1
+fiona==1.9.4.post1
+pyproj==3.6.0
+
+# Scientific computing
+matplotlib==3.7.2
+pandas>=2.1
+scipy>=1.12
+
+# Testing and development
+pytest==7.4.0
+pytest-cov==4.1.0
+
+# Note: These dependencies should be compatible with your existing NDVI module
+# If you have conflicts, use the versions from your NDVI module
