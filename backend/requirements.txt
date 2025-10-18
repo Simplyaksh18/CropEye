@@ -24,4 +24,4 @@ scikit-learn>=1.4
 pillow==10.0.0
 
 # Satellite data access
-sentinelsat==1.2.1
+sentinelsat>=1.2.1,<2.0.0

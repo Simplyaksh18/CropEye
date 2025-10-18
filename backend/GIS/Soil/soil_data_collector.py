@@ -239,7 +239,6 @@ class SoilDataCollector:
 
             # Get correlation analysis
             correlation_analysis = ndvi_integration.get_ndvi_soil_correlation(ndvi_data, soil_data or {})
-
             return {
                 'ndvi_value': ndvi_data.get('ndvi_value'),
                 'ndvi_data_source': ndvi_data.get('ndvi_data_source'),
@@ -248,6 +247,9 @@ class SoilDataCollector:
                 'location_name': ndvi_data.get('location_name'),
                 'health_analysis': ndvi_data.get('health_analysis'),
                 'soil_ndvi_correlation': correlation_analysis,
+                'processing_details': ndvi_data.get('processing_details') if isinstance(ndvi_data, dict) else None,
+                # Include any raw download metadata if present for deeper debugging
+                'raw_download_result': ndvi_data.get('download_result') if isinstance(ndvi_data, dict) else None,
                 'analysis_date': datetime.now().isoformat(),
                 'integration_status': 'success'
             }
@@ -368,6 +370,7 @@ class SoilDataCollector:
         """Fetch data from SoilGrids REST API (ISRIC World Soil Information)"""
         try:
             # SoilGrids properties to fetch
+            import json
             properties = [
                 "phh2o",      # pH in H2O
                 "soc",        # Soil Organic Carbon
@@ -378,6 +381,7 @@ class SoilDataCollector:
                 "silt"        # Silt content
             ]
 
+            import os
             depths = "0-5cm"  # Surface layer
 
             url = f"{self.soilgrids_base_url}/query"
@@ -661,8 +665,7 @@ class SoilDataCollector:
 
     def _identify_agricultural_region(self, latitude: float, longitude: float) -> Dict:
         """Identify agricultural region and return typical soil properties"""
-
-        # India - Northern Plains (Punjab, Haryana, UP) 
+        # India - Northern Plains (Punjab, Haryana, UP)
         if 26 <= latitude <= 32 and 74 <= longitude <= 84:
             return {
                 "region_name": "Indo-Gangetic Plains",

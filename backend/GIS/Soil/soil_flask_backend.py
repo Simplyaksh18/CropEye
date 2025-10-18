@@ -29,6 +29,67 @@ logger = logging.getLogger(__name__)
 # Set environment variables from root backend .env
 env_creds.set_environment_variables()
 
+# Run a pre-flight PROJ compatibility check - fails fast with instructions if incompatible
+# Skip this check during pytest collection or when explicitly requested
+skip_checks = False
+if os.environ.get('SKIP_PROJ_CHECK') == '1':
+    skip_checks = True
+if any(k in os.environ for k in ('PYTEST_CURRENT_TEST', 'PYTEST_ADDOPTS', 'PYTEST_RUNNING')):
+    skip_checks = True
+
+if not skip_checks:
+    try:
+        check_script = os.path.join(os.path.dirname(__file__), 'scripts', 'check_proj_compat.py')
+        if os.path.exists(check_script):
+            # Import the checker as a module and call main() to get a return code
+            import importlib.util
+            spec = importlib.util.spec_from_file_location('check_proj_compat', check_script)
+            if spec and spec.loader:
+                checker = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(checker)
+                # Call main() if available
+                if hasattr(checker, 'main'):
+                    rc = checker.main()
+                    if rc and rc != 0:
+                        raise SystemExit(rc)
+    except SystemExit as se:
+        # During pytest collection this check can cause imports to fail. Suppress the exit
+        # when running under pytest (or when pytest is importable). Otherwise re-raise
+        # to stop normal server startup.
+        running_under_pytest = ('PYTEST_CURRENT_TEST' in os.environ) or ('pytest' in sys.modules)
+        logger.error(f"PROJ compatibility check signaled exit (code {se.code}).")
+        if running_under_pytest:
+            logger.warning("Detected pytest environment; suppressing PROJ compatibility exit during test collection.")
+        else:
+            logger.error(f"PROJ compatibility check failed (exit code {se.code}). See INSTALL_WIN_GDAL.md for fix steps.")
+            raise
+    except Exception:
+        # don't block startup if the checker fails unexpectedly; log and continue
+        logger.warning('PROJ compatibility checker failed to run; continuing startup')
+
+# Runtime shim: ensure PROJ_LIB points to a valid proj data directory (helps Windows with multiple PROJ installs)
+if not os.getenv('PROJ_LIB'):
+    possible_proj_paths = []
+
+    # Conda env layouts (Library/share/proj)
+    conda_prefix = os.getenv('CONDA_PREFIX') or os.getenv('CONDA_DEFAULT_ENV')
+    if conda_prefix:
+        possible_proj_paths.append(os.path.join(os.getenv('CONDA_PREFIX', conda_prefix), 'Library', 'share', 'proj'))
+        possible_proj_paths.append(os.path.join(sys.prefix, 'Library', 'share', 'proj'))
+
+    # Typical Miniconda/Anaconda locations
+    possible_proj_paths.append(os.path.join(os.path.expanduser('~'), 'miniconda3', 'Library', 'share', 'proj'))
+    possible_proj_paths.append(os.path.join(os.path.expanduser('~'), 'anaconda3', 'Library', 'share', 'proj'))
+
+    # OSGeo4W default
+    possible_proj_paths.append(r'C:\OSGeo4W64\share\proj')
+
+    for p in possible_proj_paths:
+        if p and os.path.exists(p):
+            os.environ['PROJ_LIB'] = p
+            logger.info(f"PROJ_LIB set to: {p}")
+            break
+
 # Initialize soil data collector
 soil_collector = SoilDataCollector()
 
@@ -115,6 +176,21 @@ def analyze_soil():
             'processing_method': 'comprehensive_analysis'
         }
 
+        # Attach NDVI provenance information (exposes source, whether real data, and processing details)
+        try:
+            ndvi_corr = soil_result.get('ndvi_correlation') or {}
+            proc_details = ndvi_corr.get('processing_details') if isinstance(ndvi_corr, dict) else {}
+
+            soil_result['ndvi_provenance'] = {
+                'is_real_data': ndvi_corr.get('is_real_data') if isinstance(ndvi_corr, dict) else None,
+                'ndvi_data_source': ndvi_corr.get('ndvi_data_source') if isinstance(ndvi_corr, dict) else None,
+                'data_quality': ndvi_corr.get('data_quality') if isinstance(ndvi_corr, dict) else None,
+                'processing_details': proc_details
+            }
+        except Exception:
+            # Never fail the endpoint because provenance couldn't be built
+            soil_result['ndvi_provenance'] = None
+
         logger.info(f"✅ Comprehensive soil analysis complete: {soil_result.get('confidence_score', 0):.2f} confidence")
         return jsonify(soil_result)
 
@@ -196,6 +272,12 @@ def compare_soil_locations():
                     location_summary['ndvi_value'] = ndvi_data.get('ndvi_value')
                     location_summary['ndvi_source'] = ndvi_data.get('ndvi_data_source')
                     location_summary['vegetation_health'] = ndvi_data.get('health_analysis', {}).get('category')
+                    # Include provenance for debugging/comparison
+                    location_summary['ndvi_provenance'] = {
+                        'is_real_data': ndvi_data.get('is_real_data'),
+                        'data_source': ndvi_data.get('ndvi_data_source'),
+                        'processing_details': ndvi_data.get('processing_details')
+                    }
 
                 comparison_results['locations'].append(location_summary)
 
@@ -385,6 +467,55 @@ def get_soil_recommendations(lat, lng):
     except Exception as e:
         logger.error(f"Soil recommendations error: {e}")
         return jsonify({'error': f'Recommendations failed: {str(e)}'}), 500
+
+
+@app.route('/api/soil/ndvi/debug', methods=['POST'])
+def ndvi_debug():
+    """Debug endpoint: return raw download_result and processing details for given coordinates
+
+    Expected JSON payload: {"latitude": 30.3398, "longitude": 76.3869}
+    """
+    try:
+        data = request.get_json()
+        if not data or 'latitude' not in data or 'longitude' not in data:
+            return jsonify({'error': 'Latitude and longitude required'}), 400
+
+        lat = float(data['latitude'])
+        lng = float(data['longitude'])
+
+        # Guard: make sure ndvi integration exists
+        if not ndvi_integration.is_available():
+            return jsonify({'error': 'NDVI integration not available', 'available': False}), 503
+
+        # Attempt to run downloader directly (may be None)
+        downloader = getattr(ndvi_integration, 'downloader', None)
+
+        if not downloader:
+            return jsonify({'error': 'Downloader component not initialized', 'available': False}), 503
+
+        try:
+            download_result = downloader.download_for_coordinates(lat, lng)
+        except Exception as ex:
+            return jsonify({'error': 'Downloader raised exception', 'exception': str(ex)}), 500
+
+        # Build response with processing hints
+        proc = None
+        if isinstance(download_result, dict):
+            proc = {
+                'red_band_path': download_result.get('red_band_path'),
+                'nir_band_path': download_result.get('nir_band_path'),
+                'red_band_file_type': download_result.get('red_band_file_type'),
+                'nir_band_file_type': download_result.get('nir_band_file_type'),
+                'product_id': download_result.get('product_id'),
+                'product_name': download_result.get('product_name'),
+                'is_real_data': download_result.get('is_real_data')
+            }
+
+        return jsonify({'download_result': download_result, 'processing_details': proc}), 200
+
+    except Exception as e:
+        logger.error(f"NDVI debug error: {e}")
+        return jsonify({'error': f'Debug failed: {str(e)}'}), 500
 
 @app.route('/api/soil/known-locations', methods=['GET'])
 def get_known_locations():

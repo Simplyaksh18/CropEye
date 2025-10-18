@@ -12,6 +12,7 @@ import logging
 import shutil
 import rasterio
 from rasterio.transform import from_origin
+import socket
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -26,6 +27,23 @@ class CopernicusDataDownloader:
         self.client_id = client_id or os.getenv('COPERNICUS_CLIENT_ID')
         self.client_secret = client_secret or os.getenv('COPERNICUS_CLIENT_SECRET')
 
+        # Option to force simulated/synthetic data (skip network requests)
+        self.force_simulated = str(os.getenv('NDVI_FORCE_SIMULATED', '')).lower() in ['1', 'true', 'yes']
+
+        # Create a requests session that will honor environment proxy settings
+        self.session = requests.Session()
+        self.session.trust_env = True
+        # Optionally populate proxies explicitly for visibility
+        proxy_http = os.getenv('HTTP_PROXY') or os.getenv('http_proxy')
+        proxy_https = os.getenv('HTTPS_PROXY') or os.getenv('https_proxy')
+        proxies = {}
+        if proxy_http:
+            proxies['http'] = proxy_http
+        if proxy_https:
+            proxies['https'] = proxy_https
+        if proxies:
+            self.session.proxies.update(proxies)
+
         self.access_token = None
         self.data_dir = "sentinel_data"
 
@@ -35,6 +53,10 @@ class CopernicusDataDownloader:
         # Log credential status (without revealing actual values)
         logger.info(f"Username configured: {bool(self.username)}")
         logger.info(f"Password configured: {bool(self.password)}")
+        if self.force_simulated:
+            logger.info("NDVI_FORCE_SIMULATED is set -> downloader will use simulated data only")
+        if self.session.proxies:
+            logger.info(f"Using proxies: {self.session.proxies}")
 
     def get_access_token(self):
         """Get OAuth access token - WORKING VERSION"""
@@ -42,6 +64,15 @@ class CopernicusDataDownloader:
             raise ValueError("Copernicus credentials not found")
 
         token_url = "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token"
+
+        # Diagnostic: try to resolve the token host to help debug network issues
+        try:
+            host = token_url.split('/')[2]
+            addrs = socket.getaddrinfo(host, 443)
+            resolved = sorted({a[4][0] for a in addrs})
+            logger.info(f"Resolved token host {host} -> {resolved}")
+        except Exception as ex:
+            logger.warning(f"Could not resolve token host for diagnostics: {ex}")
 
         # Try with your specific client first, then fallback to public
         for client_id in [self.client_id, "cdse-public"]:
@@ -58,7 +89,12 @@ class CopernicusDataDownloader:
 
             try:
                 logger.info(f"Attempting token request with client: {client_id}")
-                response = requests.post(token_url, data=data, timeout=30)
+
+                if self.force_simulated:
+                    logger.info("Skipping token request because NDVI_FORCE_SIMULATED is set")
+                    break
+
+                response = self.session.post(token_url, data=data, timeout=30)
 
                 if response.status_code == 200:
                     token_info = response.json()
@@ -122,12 +158,15 @@ class CopernicusDataDownloader:
             "Authorization": f"Bearer {self.access_token}",
             "Accept": "application/json"
         }
-
         try:
             logger.info(f"🔍 SIMPLE search for Sentinel-2 data around {lat}, {lng}")
             logger.info(f"Date range: {start_date} to {end_date}")
 
-            response = requests.get(search_url, params=params, headers=headers, timeout=90)
+            if self.force_simulated:
+                logger.info("NDVI_FORCE_SIMULATED set - skipping search and returning empty product list")
+                return []
+
+            response = self.session.get(search_url, params=params, headers=headers, timeout=90)
             logger.info(f"Search response status: {response.status_code}")
 
             if response.status_code == 200:
@@ -163,6 +202,13 @@ class CopernicusDataDownloader:
 
         logger.info(f"🛰️ Starting download for {lat}, {lng}")
         logger.info(f"Date range: {start_str} to {end_str}")
+
+        # Early exit if simulation is forced
+        if self.force_simulated:
+            logger.warning("NDVI_FORCE_SIMULATED is set. Skipping real data search.")
+            logger.info("Falling back to enhanced synthetic data as per configuration.")
+            return self._create_enhanced_synthetic_data(lat, lng, end_str)
+
 
         try:
             # Try simple search first
@@ -239,16 +285,46 @@ class CopernicusDataDownloader:
         red_path = os.path.join(synthetic_dir, f'B04_real_based_{lat}_{lng}.tif')
         nir_path = os.path.join(synthetic_dir, f'B08_real_based_{lat}_{lng}.tif')
 
-        # Write the synthetic TIF files
-        with rasterio.open(red_path, 'w', **profile) as dst:
-            dst.write(red.astype('float32'), 1)
+        # Write the synthetic files; prefer GeoTIFF but gracefully fall back to .npy if rasterio/PROJ fails
+        try:
+            with rasterio.open(red_path, 'w', **profile) as dst:
+                dst.write(red.astype('float32'), 1)
 
-        with rasterio.open(nir_path, 'w', **profile) as dst:
-            dst.write(nir.astype('float32'), 1)
+            with rasterio.open(nir_path, 'w', **profile) as dst:
+                dst.write(nir.astype('float32'), 1)
+
+            written_red = red_path
+            written_nir = nir_path
+        except Exception as ex:
+            logger.warning(f"Rasterio write failed ({ex}), falling back to .npy files")
+            # Fallback to numpy .npy files
+            red_npy = os.path.join(synthetic_dir, f'B04_real_based_{lat}_{lng}.npy')
+            nir_npy = os.path.join(synthetic_dir, f'B08_real_based_{lat}_{lng}.npy')
+            try:
+                np.save(red_npy, red.astype('float32'))
+                np.save(nir_npy, nir.astype('float32'))
+                written_red = red_npy
+                written_nir = nir_npy
+            except Exception as ex2:
+                logger.error(f"Failed to write fallback .npy files: {ex2}")
+                raise
+
+        # Determine file types used (e.g., .tif or .npy)
+        try:
+            red_ext = os.path.splitext(written_red)[1].lower()
+        except Exception:
+            red_ext = None
+
+        try:
+            nir_ext = os.path.splitext(written_nir)[1].lower()
+        except Exception:
+            nir_ext = None
 
         return {
-            'red_band_path': red_path,
-            'nir_band_path': nir_path,
+            'red_band_path': written_red,
+            'nir_band_path': written_nir,
+            'red_band_file_type': red_ext,
+            'nir_band_file_type': nir_ext,
             'coordinates': {'lat': lat, 'lng': lng},
             'date': date_str,
             'cloud_cover': cloud_cover,
@@ -296,7 +372,9 @@ class CopernicusDataDownloader:
             water_radius = np.random.randint(20, 80)
             y_grid, x_grid = np.ogrid[:size, :size]
             water_mask = (x_grid - water_x)**2 + (y_grid - water_y)**2 < water_radius**2
-            ndvi_sample[water_mask] = np.random.uniform(-0.3, 0.1, np.sum(water_mask))
+            count = int(np.sum(water_mask))
+            if count > 0:
+                ndvi_sample[water_mask] = np.random.uniform(-0.3, 0.1, size=count)
 
         return ndvi_sample
 
@@ -333,16 +411,32 @@ class CopernicusDataDownloader:
         red_path = os.path.join(synthetic_dir, f'synthetic_B04_{lat}_{lng}.tif')
         nir_path = os.path.join(synthetic_dir, f'synthetic_B08_{lat}_{lng}.tif')
 
-        # Write the synthetic TIF files
-        with rasterio.open(red_path, 'w', **profile) as dst:
-            dst.write(red.astype('float32'), 1)
+        # Write the synthetic files; prefer GeoTIFF but fall back to .npy on error
+        try:
+            with rasterio.open(red_path, 'w', **profile) as dst:
+                dst.write(red.astype('float32'), 1)
 
-        with rasterio.open(nir_path, 'w', **profile) as dst:
-            dst.write(nir.astype('float32'), 1)
+            with rasterio.open(nir_path, 'w', **profile) as dst:
+                dst.write(nir.astype('float32'), 1)
+
+            written_red = red_path
+            written_nir = nir_path
+        except Exception as ex:
+            logger.warning(f"Rasterio write failed ({ex}), falling back to .npy files")
+            red_npy = os.path.join(synthetic_dir, f'synthetic_B04_{lat}_{lng}.npy')
+            nir_npy = os.path.join(synthetic_dir, f'synthetic_B08_{lat}_{lng}.npy')
+            try:
+                np.save(red_npy, red.astype('float32'))
+                np.save(nir_npy, nir.astype('float32'))
+                written_red = red_npy
+                written_nir = nir_npy
+            except Exception as ex2:
+                logger.error(f"Failed to write fallback .npy files: {ex2}")
+                raise
 
         return {
-            'red_band_path': red_path,
-            'nir_band_path': nir_path,
+            'red_band_path': written_red,
+            'nir_band_path': written_nir,
             'coordinates': {'lat': lat, 'lng': lng},
             'date': date_str,
             'cloud_cover': 10,

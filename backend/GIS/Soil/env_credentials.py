@@ -10,6 +10,7 @@ import os
 from dotenv import load_dotenv
 import sys
 import logging
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +88,11 @@ class EnvironmentCredentials:
             logger.info(f"   {cred}: {status}")
 
     def set_environment_variables(self):
-        """Set environment variables for the current session"""
+        """Set environment variables for the current session.
+
+        Also attempt to set a sane PROJ_LIB on Windows so rasterio/GDAL will
+        use a compatible proj.db (avoiding system PostGIS proj.db conflicts).
+        """
         env_vars = {
             'COPERNICUS_USERNAME': self.COPERNICUS_USERNAME,
             'COPERNICUS_PASSWORD': self.COPERNICUS_PASSWORD,
@@ -100,6 +105,41 @@ class EnvironmentCredentials:
         for key, value in env_vars.items():
             if value:
                 os.environ[key] = value
+
+        # PROJ_LIB shim: only set if not already set in the environment
+        if not os.environ.get('PROJ_LIB'):
+            candidates = []
+            conda_prefix = os.environ.get('CONDA_PREFIX')
+            if conda_prefix:
+                candidates.append(Path(conda_prefix) / 'Library' / 'share' / 'proj')
+                candidates.append(Path(conda_prefix) / 'share' / 'proj')
+
+            # sys.prefix can be a virtualenv or interpreter install
+            if sys.prefix:
+                candidates.append(Path(sys.prefix) / 'Library' / 'share' / 'proj')
+                candidates.append(Path(sys.prefix) / 'share' / 'proj')
+
+            # Common OSGeo4W install path on Windows
+            candidates.append(Path(r"C:\OSGeo4W64\share\proj"))
+
+            # Program Files variants (ArcGIS or other installers)
+            program_files = os.environ.get('PROGRAMFILES', r"C:\Program Files")
+            candidates.append(Path(program_files) / 'ArcGIS' / 'PROJ' / 'share' / 'proj')
+
+            chosen = None
+            for p in candidates:
+                try:
+                    if p.exists() and any(p.iterdir()):
+                        chosen = p
+                        break
+                except Exception:
+                    continue
+
+            if chosen:
+                os.environ['PROJ_LIB'] = str(chosen)
+                logger.info(f"PROJ_LIB set to: {chosen}")
+            else:
+                logger.info("No PROJ_LIB candidate found; leaving PROJ_LIB unset if not present")
 
         logger.info("🔧 Environment variables set for current session")
         return True

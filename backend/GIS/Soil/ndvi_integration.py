@@ -14,6 +14,13 @@ logger = logging.getLogger(__name__)
 class NDVIIntegration:
     def __init__(self):
         """Initialize NDVI integration with existing module"""
+        # Make sure environment credentials from backend .env are available
+        try:
+            from env_credentials import env_creds
+            env_creds.set_environment_variables()
+        except Exception:
+            # If env_credentials isn't available here, we'll proceed; downloader will fallback
+            pass
         self.ndvi_module_available = False
         self.calculator = None
         self.downloader = None
@@ -164,54 +171,88 @@ class NDVIIntegration:
                     }
                 }
 
-            # Try to get real satellite data if no known location
+            # Try to get real satellite data if no known location. If downloader exists but
+            # network access is disabled (NDVI_FORCE_SIMULATED) or fails, prefer realistic
+            # synthetic generation from the calculator's helper so unknown locations still
+            # return geographically-plausible NDVI arrays.
             try:
                 logger.info("📡 Attempting to get real satellite NDVI data...")
+
                 download_result = None
+                ndvi_result = None
+
+                # Respect downloader presence and attempt download unless forced to simulated
                 if downloader:
-                    download_result = downloader.download_for_coordinates(latitude, longitude, days_back=days_back)
+                    try:
+                        download_result = downloader.download_for_coordinates(latitude, longitude, days_back=days_back)
+                        logger.info(f"Download result keys: {list(download_result.keys()) if isinstance(download_result, dict) else 'none'}")
+                    except Exception as dlex:
+                        logger.warning(f"Downloader raised exception: {dlex}")
+                        download_result = None
 
-                    if download_result and download_result.get('red_band_path') and download_result.get('nir_band_path'):
-                        # Calculate NDVI from downloaded bands (only if calculator present)
-                        if calculator:
-                            ndvi_result = calculator.calculate_ndvi_from_files(
-                                download_result['red_band_path'],
-                                download_result['nir_band_path']
-                            )
-                        else:
-                            ndvi_result = None
-                    else:
+                # If we have downloaded band paths and a calculator, compute NDVI
+                if download_result and isinstance(download_result, dict) and download_result.get('red_band_path') and download_result.get('nir_band_path') and calculator:
+                    try:
+                        ndvi_result = calculator.calculate_ndvi_from_files(download_result['red_band_path'], download_result['nir_band_path'])
+                    except Exception as cex:
+                        logger.warning(f"Calculator failed on downloaded bands: {cex}")
                         ndvi_result = None
-                else:
-                    ndvi_result = None
 
-                    if ndvi_result and 'statistics' in ndvi_result:
-                        # Safe extraction of processing details from download_result
-                        dr = download_result if 'download_result' in locals() and download_result else {}
-
-                        return {
-                            'ndvi_value': ndvi_result['statistics']['mean'],
-                            'ndvi_data_source': 'satellite_derived',
-                            'data_quality': 'high',
-                            'is_real_data': dr.get('is_real_data', True) if isinstance(dr, dict) else True,
-                            'location_name': f"Satellite Location ({latitude:.4f}, {longitude:.4f})",
-                            'health_analysis': self._analyze_ndvi_health(ndvi_result['statistics']['mean']),
-                            'processing_details': {
-                                'red_band_path': dr.get('red_band_path') if isinstance(dr, dict) else None,
-                                'nir_band_path': dr.get('nir_band_path') if isinstance(dr, dict) else None,
-                                'download_source': dr.get('data_source', 'copernicus') if isinstance(dr, dict) else 'copernicus',
-                                'confidence': 0.90
-                            }
+                # If NDVI was successfully calculated from real data, return it
+                if ndvi_result and isinstance(ndvi_result, dict) and 'statistics' in ndvi_result:
+                    dr = download_result if isinstance(download_result, dict) else {}
+                    mean_val = ndvi_result['statistics'].get('mean') if isinstance(ndvi_result['statistics'], dict) else None
+                    return {
+                        'ndvi_value': mean_val,
+                        'ndvi_data_source': 'satellite_derived',
+                        'data_quality': 'high',
+                        'is_real_data': dr.get('is_real_data', True) if isinstance(dr, dict) else True,
+                        'location_name': f"Satellite Location ({latitude:.4f}, {longitude:.4f})",
+                        'health_analysis': self._analyze_ndvi_health(mean_val if mean_val is not None else 0.0),
+                        'processing_details': {
+                            'red_band_path': dr.get('red_band_path') if isinstance(dr, dict) else None,
+                            'nir_band_path': dr.get('nir_band_path') if isinstance(dr, dict) else None,
+                            'red_band_file_type': dr.get('red_band_file_type') if isinstance(dr, dict) else None,
+                            'nir_band_file_type': dr.get('nir_band_file_type') if isinstance(dr, dict) else None,
+                            'download_source': dr.get('data_source', 'copernicus') if isinstance(dr, dict) else 'copernicus',
+                            'product_id': dr.get('product_id') if isinstance(dr, dict) else None,
+                            'product_name': dr.get('product_name') if isinstance(dr, dict) else None,
+                            'confidence': 0.90
                         }
+                    }
 
             except Exception as e:
                 logger.warning(f"Satellite NDVI retrieval failed: {e}")
 
-            # Fallback to sample generation using NDVI module
+            # Fallback to sample generation using NDVI module (preferred when downloader/network fails)
+            if calculator and hasattr(calculator, '_generate_realistic_ndvi_data'):
+                try:
+                    logger.info("📊 Using calculator._generate_realistic_ndvi_data for realistic synthetic NDVI")
+                    # calculator._generate_realistic_ndvi_data expects red/nir paths or lat/lng; prefer lat/lng
+                    generated = calculator._generate_realistic_ndvi_data(None, None, lat=latitude, lng=longitude) if hasattr(calculator, '_generate_realistic_ndvi_data') else None
+                    if generated and 'statistics' in generated:
+                        mean_ndvi = generated['statistics'].get('mean')
+                        return {
+                            'ndvi_value': mean_ndvi,
+                            'ndvi_data_source': 'realistic_synthetic_from_calculator',
+                            'data_quality': 'medium',
+                            'is_real_data': False,
+                            'location_name': f"Simulated Location ({latitude:.4f}, {longitude:.4f})",
+                            'health_analysis': self._analyze_ndvi_health(mean_ndvi),
+                            'processing_details': {
+                                'source': 'calculator_realistic_synthetic',
+                                'generated_by': 'NDVICalculator._generate_realistic_ndvi_data',
+                                'confidence': 0.75
+                            }
+                        }
+                except Exception as genex:
+                    logger.warning(f"Calculator realistic generator failed: {genex}")
+
+            # As last resort, use the module-level sample generator if available
             if self.create_sample_ndvi_data:
-                logger.info("📊 Using NDVI sample data generation...")
+                logger.info("📊 Using NDVI sample data generation (module-level) as last resort...")
                 sample_ndvi = self.create_sample_ndvi_data(latitude, longitude)
-                mean_ndvi = np.mean(sample_ndvi)
+                mean_ndvi = float(np.mean(sample_ndvi))
 
                 return {
                     'ndvi_value': mean_ndvi,
@@ -222,6 +263,7 @@ class NDVIIntegration:
                     'health_analysis': self._analyze_ndvi_health(mean_ndvi),
                     'processing_details': {
                         'source': 'sample_data_generation',
+                        'generated_by': 'ndvi_calculator.create_sample_ndvi_data',
                         'confidence': 0.70
                     }
                 }

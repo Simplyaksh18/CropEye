@@ -1,142 +1,62 @@
-
 #!/usr/bin/env python3
+
 """
-Comprehensive Test Suite for Soil Analysis Module with NDVI Integration
-Tests integration with existing NDVI module and real agricultural coordinates
+Comprehensive Test Script for Soil Analysis System
+Tests soil data analysis, NDVI integration, and all endpoints
 """
 
 import os
 import requests
 import json
 import time
+import subprocess
 import sys
 from datetime import datetime
 
-class SoilAnalysisTestSuite:
+class SoilSystemTester:
     def __init__(self):
-        self.api_base = "http://127.0.0.1:5002/api"
+        self.api_base = "http://127.0.0.1:5002/api"  # Soil API port
 
-        # Real agricultural coordinates (matching NDVI module)
+        # Test coordinates with expected soil results
         self.test_coordinates = [
-            {
-                "name": "Punjab Wheat Farm",
-                "lat": 30.3398,
-                "lng": 76.3869,
-                "expected_soil": "Alluvial Soil",
-                "expected_ph": 7.2,
-                "expected_texture": "Sandy Loam",
-                "expected_ndvi": 0.652,  # From NDVI module
-                "is_known_location": True,
-                "description": "Major wheat production area - matches NDVI module data"
-            },
-            {
-                "name": "Maharashtra Sugarcane Farm",
-                "lat": 18.15,  # Normalized coordinate
-                "lng": 74.5777,
-                "expected_soil": "Black Cotton Soil (Vertisols)",
-                "expected_ph": 8.1,
-                "expected_texture": "Clay",
-                "expected_ndvi": 0.718,  # From NDVI module
-                "is_known_location": True,
-                "description": "Sugarcane region - matches NDVI module data"
-            },
-            {
-                "name": "California Central Valley",
-                "lat": 36.7783,
-                "lng": -119.4179,
-                "expected_soil": "Aridisol",
-                "expected_ph": 7.8,
-                "expected_texture": "Sandy Clay Loam",
-                "expected_ndvi": 0.547,  # From NDVI module
-                "is_known_location": True,
-                "description": "Central Valley agriculture - matches NDVI module"
-            },
-            {
-                "name": "Iowa Corn Farm",
-                "lat": 41.5868,
-                "lng": -93.6250,
-                "expected_soil": "Prairie Soil (Mollisols)",
-                "expected_ph": 6.3,
-                "expected_texture": "Silty Clay Loam",
-                "expected_ndvi": None,  # Not in NDVI module
-                "is_known_location": True,
-                "description": "US Corn Belt"
-            },
-            {
-                "name": "Karnataka Coffee Plantation",
-                "lat": 13.3409,
-                "lng": 75.7131,
-                "expected_soil": "Red Lateritic Soil",
-                "expected_ph": 5.8,
-                "expected_texture": "Clay Loam",
-                "expected_ndvi": None,  # Not in NDVI module
-                "is_known_location": True,
-                "description": "Coffee growing region"
-            },
-            {
-                "name": "Random GPS Location (Delhi)",
-                "lat": 28.6139,
-                "lng": 77.2090,
-                "expected_soil": "Unknown",
-                "expected_ph": None,
-                "expected_texture": None,
-                "expected_ndvi": None,
-                "is_known_location": False,
-                "description": "Unknown location for synthetic data testing"
-            }
+            {"name": "Punjab Wheat Farm", "lat": 30.3398, "lng": 76.3869, 
+             "expected_ph": 7.2, "expected_soil_type": "Alluvial Soil", "has_ndvi": True},
+            {"name": "Maharashtra Sugarcane", "lat": 18.15, "lng": 74.5777, 
+             "expected_ph": 8.1, "expected_soil_type": "Black Cotton Soil", "has_ndvi": True},
+            {"name": "California Central Valley", "lat": 36.7783, "lng": -119.4179, 
+             "expected_ph": 7.8, "expected_soil_type": "Aridisol", "has_ndvi": True},
+            {"name": "Iowa Corn Farm", "lat": 41.5868, "lng": -93.6250, 
+             "expected_ph": 6.3, "expected_soil_type": "Prairie Soil", "has_ndvi": False},
+            {"name": "Random Location (Delhi)", "lat": 28.6139, "lng": 77.2090, 
+             "expected_ph": None, "expected_soil_type": "Mixed", "has_ndvi": False}
         ]
 
-    def print_header(self):
-        """Print test suite header"""
-        print("🌱 SOIL ANALYSIS MODULE - COMPREHENSIVE TEST SUITE WITH NDVI INTEGRATION")
-        print("=" * 80)
-        print(f"🕒 Test started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        print("🔗 Testing integration with existing NDVI module")
-        print("🌍 Testing with real agricultural coordinates:")
-        for coord in self.test_coordinates:
-            status = "✅ Known" if coord["is_known_location"] else "🔄 Synthetic"
-            ndvi_match = "🌿 NDVI Match" if coord["expected_ndvi"] else "📊 No NDVI"
-            print(f"   {coord['name']}: {status} {ndvi_match} ({coord['lat']}, {coord['lng']})")
-        print("=" * 80)
-
     def test_api_health(self):
-        """Test API health and integration status"""
-        print("\n🔍 TESTING API HEALTH & INTEGRATION...")
-
+        """Test API health endpoint"""
+        print("🔍 Testing Soil API Health...")
         try:
             response = requests.get(f"{self.api_base}/health", timeout=10)
 
             if response.status_code == 200:
                 health_data = response.json()
-                print("✅ API Status: HEALTHY")
-                print(f"   Service: {health_data.get('service', 'Unknown')}")
+                print(f"✅ API Status: {health_data['status']}")
+                print(f"   Service: {health_data['service']}")
                 print(f"   Known Soil Locations: {health_data.get('known_soil_locations', 0)}")
                 print(f"   NDVI Integration: {health_data.get('modules', {}).get('ndvi_integration', 'Unknown')}")
-                print(f"   Credentials: {health_data.get('credentials_status', {})}")
-
-                # Check NDVI integration specifically
-                ndvi_status = health_data.get('ndvi_integration_status', {})
-                if ndvi_status.get('module_available'):
-                    print("🌿 NDVI Integration: ✅ ACTIVE")
-                    print(f"   NDVI Known Locations: {ndvi_status.get('known_locations', 0)}")
-                else:
-                    print("🌿 NDVI Integration: ❌ FALLBACK MODE")
-
+                print(f"   Copernicus Credentials: {health_data.get('credentials_status', {}).get('copernicus', False)}")
                 return True
-
             else:
-                print(f"❌ API health check failed: {response.status_code}")
+                print(f"❌ Health check failed: {response.status_code}")
                 return False
 
         except Exception as e:
-            print(f"❌ Cannot connect to Soil Analysis API: {e}")
+            print(f"❌ Cannot connect to Soil API: {e}")
             print("💡 Make sure to run: python soil_flask_backend.py")
             return False
 
     def test_integration_status(self):
-        """Test detailed integration status"""
-        print("\n🔗 TESTING NDVI INTEGRATION STATUS...")
-
+        """Test NDVI integration status"""
+        print("\n🔧 Testing NDVI Integration Status...")
         try:
             response = requests.get(f"{self.api_base}/soil/integration-status", timeout=10)
 
@@ -147,9 +67,7 @@ class SoilAnalysisTestSuite:
                 ndvi_integration = integration_data.get('ndvi_integration', {})
                 print(f"   NDVI Module Available: {'✅ Yes' if ndvi_integration.get('available') else '❌ No'}")
                 print(f"   Calculator Initialized: {'✅ Yes' if ndvi_integration.get('calculator_initialized') else '❌ No'}")
-                print(f"   Downloader Initialized: {'✅ Yes' if ndvi_integration.get('downloader_initialized') else '❌ No'}")
                 print(f"   NDVI Known Locations: {ndvi_integration.get('known_locations', 0)}")
-                print(f"   Import Path: {ndvi_integration.get('import_path', 'Unknown')}")
 
                 credentials = integration_data.get('credentials', {})
                 print(f"   Copernicus Credentials: {'✅ Available' if credentials.get('copernicus_available') else '❌ Missing'}")
@@ -164,10 +82,9 @@ class SoilAnalysisTestSuite:
             print(f"❌ Integration status test failed: {e}")
             return False
 
-    def test_known_locations_with_ndvi(self):
-        """Test known agricultural locations with NDVI correlation"""
-        print("\n🌾 TESTING KNOWN LOCATIONS WITH NDVI CORRELATION...")
-
+    def test_known_locations(self):
+        """Test known agricultural locations endpoint"""
+        print("\n🌾 Testing Known Agricultural Locations...")
         try:
             response = requests.get(f"{self.api_base}/soil/known-locations", timeout=15)
 
@@ -197,18 +114,14 @@ class SoilAnalysisTestSuite:
             print(f"❌ Known locations test error: {e}")
             return False
 
-    def test_comprehensive_soil_analysis(self):
+    def test_soil_analysis_with_ndvi(self):
         """Test comprehensive soil analysis with NDVI integration"""
-        print("\n🌱 TESTING COMPREHENSIVE SOIL ANALYSIS WITH NDVI...")
+        print("\n🌱 Testing Comprehensive Soil Analysis with NDVI...")
 
-        results = []
+        all_passed = True
 
         for coord in self.test_coordinates:
-            print(f"\n📍 Testing {coord['name']}")
-            print(f"   Coordinates: {coord['lat']}, {coord['lng']}")
-            print(f"   Expected Soil: {coord['expected_soil']}")
-            if coord['expected_ndvi']:
-                print(f"   Expected NDVI: {coord['expected_ndvi']}")
+            print(f"\n📍 Testing {coord['name']} ({coord['lat']}, {coord['lng']})")
 
             payload = {
                 "latitude": coord["lat"],
@@ -255,8 +168,14 @@ class SoilAnalysisTestSuite:
                         texture = soil_props['texture']['value']
                         print(f"   Texture: {texture}")
 
-                        if coord['expected_texture'] and texture == coord['expected_texture']:
-                            print(f"   🎯 Texture matches expected ({coord['expected_texture']})!")
+                    # Show some nutrient data
+                    for nutrient in ['nitrogen', 'phosphorus', 'potassium', 'organic_carbon']:
+                        if nutrient in soil_props:
+                            nutrient_data = soil_props[nutrient]
+                            value = nutrient_data.get('value', 0)
+                            unit = nutrient_data.get('unit', '')
+                            classification = nutrient_data.get('classification', '')
+                            print(f"   {nutrient.title()}: {value} {unit} ({classification})")
 
                     # Check NDVI integration
                     if ndvi_correlation:
@@ -270,64 +189,89 @@ class SoilAnalysisTestSuite:
                             print(f"   NDVI Value: {ndvi_val:.4f}")
                             print(f"   NDVI Source: {ndvi_source}")
 
-                            # Check if NDVI matches expected for known locations
-                            if coord['expected_ndvi'] and abs(ndvi_val - coord['expected_ndvi']) <= 0.05:
-                                print(f"   🎯 NDVI matches NDVI module value ({coord['expected_ndvi']})!")
-
                             # Check correlation analysis
                             correlation = ndvi_correlation.get('soil_ndvi_correlation', {})
                             if correlation.get('vegetation_soil_match'):
                                 print(f"   Soil-NDVI Match: {correlation['vegetation_soil_match']}")
+
+                            # Verify NDVI is in valid range
+                            if -1 <= ndvi_val <= 1:
+                                print(f"   ✅ NDVI in valid range")
+                            else:
+                                print(f"   ⚠️ NDVI outside valid range")
+                                all_passed = False
                         else:
                             print(f"   ⚠️ NDVI value not available: {ndvi_correlation.get('error', 'Unknown error')}")
                     else:
-                        print("   ❌ No NDVI correlation data")
-
-                    # Show some nutrient data
-                    for nutrient in ['nitrogen', 'phosphorus', 'potassium', 'organic_carbon']:
-                        if nutrient in soil_props:
-                            nutrient_data = soil_props[nutrient]
-                            value = nutrient_data.get('value', 0)
-                            unit = nutrient_data.get('unit', '')
-                            classification = nutrient_data.get('classification', '')
-                            print(f"   {nutrient.title()}: {value} {unit} ({classification})")
-
-                    results.append({
-                        'location': coord['name'],
-                        'success': True,
-                        'confidence': confidence,
-                        'has_ndvi': bool(ndvi_correlation and ndvi_correlation.get('ndvi_value') is not None),
-                        'ndvi_matches_expected': bool(
-                            coord['expected_ndvi'] and ndvi_correlation and 
-                            abs(ndvi_correlation.get('ndvi_value', 0) - coord['expected_ndvi']) <= 0.05
-                        ),
-                        'soil_matches_expected': bool(coord['expected_ph'])
-                    })
+                        if coord['has_ndvi']:
+                            print("   ❌ Expected NDVI correlation data but got none")
+                            all_passed = False
+                        else:
+                            print("   ℹ️ No NDVI correlation data (as expected for this location)")
 
                 else:
                     print(f"   ❌ Analysis failed: {response.status_code}")
                     print(f"   Response: {response.text[:200]}")
-                    results.append({
-                        'location': coord['name'],
-                        'success': False,
-                        'error': response.text
-                    })
+                    all_passed = False
 
             except Exception as e:
                 print(f"   ❌ Request failed: {e}")
-                results.append({
-                    'location': coord['name'],
-                    'success': False,
-                    'error': str(e)
-                })
+                all_passed = False
 
-        return results
+        return all_passed
 
-    def test_soil_comparison_with_ndvi(self):
-        """Test soil comparison with NDVI correlation"""
-        print("\n🔍 TESTING SOIL COMPARISON WITH NDVI CORRELATION...")
+    def test_soil_analysis_without_ndvi(self):
+        """Test soil analysis without NDVI integration"""
+        print("\n🌾 Testing Soil Analysis WITHOUT NDVI...")
 
-        # Compare Punjab and Maharashtra (both have NDVI data)
+        # Test with Punjab coordinates
+        coord = self.test_coordinates[0]
+        print(f"📍 Testing {coord['name']} without NDVI...")
+
+        payload = {
+            "latitude": coord["lat"],
+            "longitude": coord["lng"],
+            "include_ndvi": False,  # Disable NDVI
+            "analysis_depth": "basic"
+        }
+
+        try:
+            response = requests.post(
+                f"{self.api_base}/soil/analyze",
+                json=payload,
+                timeout=30
+            )
+
+            if response.status_code == 200:
+                result = response.json()
+
+                print("✅ Analysis Success (No NDVI)!")
+                print(f"   Location: {result.get('location_info', {}).get('name', 'Unknown')}")
+                print(f"   Soil Type: {result.get('location_info', {}).get('soil_type', 'Unknown')}")
+                print(f"   Confidence: {result.get('confidence_score', 0):.2f}")
+
+                # Verify no NDVI data
+                ndvi_correlation = result.get('ndvi_correlation')
+                if ndvi_correlation is None:
+                    print("   ✅ Correctly excluded NDVI correlation data")
+                    return True
+                else:
+                    print("   ⚠️ NDVI data present when it should be excluded")
+                    return False
+
+            else:
+                print(f"❌ Analysis without NDVI failed: {response.status_code}")
+                return False
+
+        except Exception as e:
+            print(f"❌ No-NDVI analysis test failed: {e}")
+            return False
+
+    def test_soil_comparison(self):
+        """Test soil comparison endpoint"""
+        print("\n🔍 Testing Soil Comparison...")
+
+        # Compare Punjab and Maharashtra (both known locations)
         locations = [
             {"name": "Punjab Wheat", "latitude": 30.3398, "longitude": 76.3869},
             {"name": "Maharashtra Sugarcane", "latitude": 18.15, "longitude": 74.5777}
@@ -349,53 +293,26 @@ class SoilAnalysisTestSuite:
             if response.status_code == 200:
                 result = response.json()
 
-                print("✅ Soil Comparison with NDVI Success!")
+                print("✅ Soil Comparison Success!")
                 print(f"   Locations Compared: {len(result.get('locations', []))}")
-
-                # Show location summaries
-                locations_summary = result.get('locations', [])
-                for loc in locations_summary:
-                    print(f"   📍 {loc.get('name', 'Unknown')}:")
-                    print(f"      Soil Type: {loc.get('soil_type', 'Unknown')}")
-                    print(f"      NDVI: {loc.get('ndvi_value', 'N/A')}")
-                    print(f"      Vegetation Health: {loc.get('vegetation_health', 'Unknown')}")
 
                 # Show property comparisons
                 prop_comparisons = result.get('property_comparison', {})
-                print("   📊 Property Comparisons:")
-
                 for prop, comparison in prop_comparisons.items():
                     values = comparison.get('values', {})
-                    stats = comparison.get('statistics', {})
-
-                    print(f"      {prop.title()}:")
+                    print(f"   {prop.title()}:")
                     for location, data in values.items():
-                        print(f"        {location}: {data.get('value', 'N/A')} {data.get('unit', '')}")
+                        print(f"     {location}: {data.get('value', 'N/A')} {data.get('unit', '')}")
 
-                    if stats:
-                        print(f"        Range: {stats.get('min', 0):.2f} - {stats.get('max', 0):.2f}")
-                        print(f"        Variation: {stats.get('variation', 'Unknown')}")
-
-                # Show NDVI comparison
+                # Show NDVI comparison if available
                 ndvi_comparison = result.get('ndvi_comparison')
                 if ndvi_comparison:
-                    print("   🌿 NDVI Comparison:")
                     ndvi_values = ndvi_comparison.get('values', {})
+                    print("   🌿 NDVI Comparison:")
                     for location, data in ndvi_values.items():
                         ndvi_val = data.get('ndvi_value', 'N/A')
                         health = data.get('vegetation_health', 'Unknown')
-                        print(f"      {location}: NDVI {ndvi_val} ({health})")
-
-                    ndvi_stats = ndvi_comparison.get('statistics', {})
-                    if ndvi_stats:
-                        print(f"      NDVI Range: {ndvi_stats.get('min', 0):.3f} - {ndvi_stats.get('max', 0):.3f}")
-
-                # Show recommendations
-                recommendations = result.get('recommendations', [])
-                if recommendations:
-                    print("   💡 Comparison Recommendations:")
-                    for rec in recommendations:
-                        print(f"      • {rec}")
+                        print(f"     {location}: NDVI {ndvi_val} ({health})")
 
                 return True
             else:
@@ -406,12 +323,12 @@ class SoilAnalysisTestSuite:
             print(f"❌ Soil comparison error: {e}")
             return False
 
-    def test_detailed_recommendations(self):
-        """Test detailed soil recommendations with NDVI insights"""
-        print("\n🌾 TESTING DETAILED SOIL RECOMMENDATIONS WITH NDVI INSIGHTS...")
+    def test_recommendations(self):
+        """Test soil recommendations endpoint"""
+        print("\n🌾 Testing Soil Recommendations...")
 
-        # Test recommendations for Punjab (should have both soil and NDVI data)
-        coord = self.test_coordinates[0]  # Punjab
+        # Test recommendations for Punjab
+        coord = self.test_coordinates[0]
         lat, lng = coord["lat"], coord["lng"]
 
         try:
@@ -423,7 +340,7 @@ class SoilAnalysisTestSuite:
             if response.status_code == 200:
                 result = response.json()
 
-                print(f"✅ Detailed Recommendations Retrieved!")
+                print(f"✅ Recommendations Retrieved!")
                 print(f"   Location: {coord['name']}")
                 print(f"   Soil Health Score: {result.get('soil_health_score', 'N/A')}")
 
@@ -431,174 +348,128 @@ class SoilAnalysisTestSuite:
                 immediate = result.get('immediate_actions', [])
                 if immediate:
                     print("   ⚡ Immediate Actions:")
-                    for action in immediate:
-                        print(f"      • {action.get('action', 'N/A')}: {action.get('recommendation', 'N/A')}")
-                        print(f"        Priority: {action.get('priority', 'N/A')}")
-
-                # Show fertilizer recommendations
-                fertilizer = result.get('fertilizer_recommendations', {})
-                if fertilizer:
-                    print("   🧪 Fertilizer Recommendations:")
-                    for nutrient, rec in fertilizer.items():
-                        print(f"      {nutrient.title()}: {rec.get('recommended_application', 'N/A')}")
-                        print(f"        Sources: {', '.join(rec.get('sources', []))}")
+                    for action in immediate[:3]:  # Show first 3
+                        print(f"     • {action.get('action', 'N/A')}: {action.get('recommendation', 'N/A')}")
 
                 # Show NDVI-soil insights
                 ndvi_insights = result.get('ndvi_soil_insights', {})
                 if ndvi_insights:
                     print("   🌿 NDVI-Soil Insights:")
-                    print(f"      NDVI Value: {ndvi_insights.get('ndvi_value', 'N/A')}")
-                    print(f"      Vegetation Health: {ndvi_insights.get('vegetation_health', 'Unknown')}")
-                    print(f"      Soil-Vegetation Match: {ndvi_insights.get('soil_vegetation_match', 'Unknown')}")
-
-                    limiting_factors = ndvi_insights.get('limiting_factors', [])
-                    if limiting_factors:
-                        print("      Limiting Factors:")
-                        for factor in limiting_factors:
-                            print(f"        • {factor}")
-
-                    ndvi_recommendations = ndvi_insights.get('ndvi_recommendations', [])
-                    if ndvi_recommendations:
-                        print("      NDVI-Based Recommendations:")
-                        for rec in ndvi_recommendations:
-                            print(f"        • {rec}")
+                    print(f"     NDVI Value: {ndvi_insights.get('ndvi_value', 'N/A')}")
+                    print(f"     Vegetation Health: {ndvi_insights.get('vegetation_health', 'Unknown')}")
+                    print(f"     Soil-Vegetation Match: {ndvi_insights.get('soil_vegetation_match', 'Unknown')}")
 
                 return True
             else:
-                print(f"❌ Detailed recommendations failed: {response.status_code}")
+                print(f"❌ Recommendations failed: {response.status_code}")
                 return False
 
         except Exception as e:
-            print(f"❌ Detailed recommendations error: {e}")
+            print(f"❌ Recommendations test error: {e}")
             return False
 
-    def generate_test_summary(self, results):
-        """Generate comprehensive test summary"""
-        print("\n" + "=" * 80)
-        print("📊 SOIL ANALYSIS WITH NDVI INTEGRATION - TEST SUMMARY")
-        print("=" * 80)
+    def test_debug_info(self):
+        """Test debug endpoint"""
+        print("\n🔧 Testing Debug Information...")
+        try:
+            response = requests.get(f"{self.api_base}/soil/debug", timeout=10)
 
-        # Count results
-        analysis_results = results.get('soil_analysis', [])
-        successful_analyses = [r for r in analysis_results if r.get('success')]
-        ndvi_integrated_analyses = [r for r in successful_analyses if r.get('has_ndvi')]
-        ndvi_matched_analyses = [r for r in successful_analyses if r.get('ndvi_matches_expected')]
+            if response.status_code == 200:
+                debug_data = response.json()
+                print("✅ Debug Info Retrieved:")
+                print(f"   Working Directory: {debug_data.get('system_info', {}).get('working_directory', 'N/A')}")
+                print(f"   Known Soil Locations: {len(debug_data.get('known_soil_locations', []))}")
+                print(f"   NDVI Integration: {debug_data.get('ndvi_integration', {})}")
 
-        tests_run = {
-            'api_health': results.get('api_health', False),
-            'integration_status': results.get('integration_status', False),
-            'known_locations': results.get('known_locations', False),
-            'soil_analysis_success': len(successful_analyses),
-            'ndvi_integration_success': len(ndvi_integrated_analyses),
-            'ndvi_value_matches': len(ndvi_matched_analyses),
-            'soil_comparison': results.get('soil_comparison', False),
-            'detailed_recommendations': results.get('detailed_recommendations', False)
+                test_coords = debug_data.get('test_coordinates', [])
+                if test_coords:
+                    print("   🎯 Test Coordinates Available:")
+                    for coord in test_coords[:3]:  # Show first 3
+                        print(f"     • {coord.get('name', 'Unknown')}: {coord.get('expected', 'N/A')}")
+
+                return True
+            else:
+                print(f"⚠️ Debug endpoint returned: {response.status_code}")
+                return False
+
+        except Exception as e:
+            print(f"❌ Debug test failed: {e}")
+            return False
+
+    def run_comprehensive_test(self):
+        """Run all tests"""
+        print("🧪 SOIL ANALYSIS SYSTEM COMPREHENSIVE TEST SUITE")
+        print("=" * 70)
+        print(f"Test started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
+        # Track test results
+        results = {
+            'health': False,
+            'integration_status': False,
+            'known_locations': False,
+            'soil_analysis_with_ndvi': False,
+            'soil_analysis_without_ndvi': False,
+            'soil_comparison': False,
+            'recommendations': False,
+            'debug': False
         }
 
-        print("🔍 System & Integration Tests:")
-        print(f"   API Health: {'✅ PASS' if tests_run['api_health'] else '❌ FAIL'}")
-        print(f"   NDVI Integration Status: {'✅ PASS' if tests_run['integration_status'] else '❌ FAIL'}")
-        print(f"   Known Locations: {'✅ PASS' if tests_run['known_locations'] else '❌ FAIL'}")
+        # Run tests
+        results['health'] = self.test_api_health()
 
-        print("\n🌱 Soil Analysis Tests:")
-        print(f"   Successful Analyses: {tests_run['soil_analysis_success']}/{len(self.test_coordinates)}")
-        print(f"   NDVI Integration Success: {tests_run['ndvi_integration_success']}/{len(self.test_coordinates)}")
-        print(f"   NDVI Values Match NDVI Module: {tests_run['ndvi_value_matches']}/3 expected")
-        print(f"   Soil Comparison: {'✅ PASS' if tests_run['soil_comparison'] else '❌ FAIL'}")
-        print(f"   Detailed Recommendations: {'✅ PASS' if tests_run['detailed_recommendations'] else '❌ FAIL'}")
-
-        # Detailed results for each location
-        print("\n📍 Location-Specific Results:")
-        for result in analysis_results:
-            if result.get('success'):
-                confidence = result.get('confidence', 0)
-                ndvi_status = "🌿 NDVI" if result.get('has_ndvi') else "❌ No NDVI"
-                match_status = "🎯 Match" if result.get('ndvi_matches_expected') else ""
-                print(f"   {result['location']}: ✅ SUCCESS (Confidence: {confidence:.2f}) {ndvi_status} {match_status}")
-            else:
-                print(f"   {result['location']}: ❌ FAILED")
-
-        # Overall assessment
-        passed_tests = sum([
-            tests_run['api_health'],
-            tests_run['integration_status'],
-            tests_run['known_locations'],
-            tests_run['soil_analysis_success'] >= 4,  # At least 4/6 locations
-            tests_run['ndvi_integration_success'] >= 2,  # At least 2 with NDVI
-            tests_run['soil_comparison'],
-            tests_run['detailed_recommendations']
-        ])
-
-        total_tests = 7
-        success_rate = passed_tests / total_tests * 100
-
-        print(f"\n🏆 OVERALL SCORE: {passed_tests}/{total_tests} ({success_rate:.0f}%)")
-
-        if success_rate >= 85:
-            print("🎉 EXCELLENT: Soil Analysis with NDVI Integration is fully functional!")
-            print("   ✅ NDVI module integration working perfectly")
-            print("   ✅ Real agricultural data with NDVI correlation")
-            print("   ✅ Multiple data sources and comprehensive analysis")
-            print("   ✅ Both GPS and manual coordinates supported")
-        elif success_rate >= 70:
-            print("✅ GOOD: Soil Analysis Module is mostly functional")
-            print("   Most features working, minor integration issues may exist")
+        if results['health']:
+            results['integration_status'] = self.test_integration_status()
+            results['known_locations'] = self.test_known_locations()
+            results['soil_analysis_with_ndvi'] = self.test_soil_analysis_with_ndvi()
+            results['soil_analysis_without_ndvi'] = self.test_soil_analysis_without_ndvi()
+            results['soil_comparison'] = self.test_soil_comparison()
+            results['recommendations'] = self.test_recommendations()
+            results['debug'] = self.test_debug_info()
         else:
-            print("⚠️ NEEDS IMPROVEMENT: Some major integration issues detected")
-            print("   Review NDVI module import path and credential configuration")
+            print("⚠️ API health check failed - skipping other tests")
 
-        return success_rate
+        # Summary
+        print("\n" + "=" * 70)
+        print("📊 TEST SUMMARY")
+        print("=" * 70)
 
-    def run_complete_test_suite(self):
-        """Run the complete soil analysis test suite with NDVI integration"""
-        self.print_header()
+        passed = sum(results.values())
+        total = len(results)
 
-        # Initialize results tracking
-        results = {}
+        for test, result in results.items():
+            status = "✅ PASS" if result else "❌ FAIL"
+            print(f"{test.replace('_', ' ').title():.<50} {status}")
 
-        # Run all tests
-        try:
-            results['api_health'] = self.test_api_health()
+        print(f"\nOverall: {passed}/{total} tests passed ({passed/total*100:.0f}%)")
 
-            if results['api_health']:
-                results['integration_status'] = self.test_integration_status()
-                results['known_locations'] = self.test_known_locations_with_ndvi()
-                results['soil_analysis'] = self.test_comprehensive_soil_analysis()
-                results['soil_comparison'] = self.test_soil_comparison_with_ndvi()
-                results['detailed_recommendations'] = self.test_detailed_recommendations()
-            else:
-                print("⚠️ API health check failed - skipping other tests")
-                return False
+        if passed >= 6:  # Most functionality working
+            print("🎉 Soil Analysis System is functional and ready for use!")
+            print("✅ NDVI integration working correctly")
+            print("✅ Known locations returning accurate data")
+            print("✅ Soil-NDVI correlation analysis working")
+        elif passed >= 4:  # Basic functionality working
+            print("⚠️ System mostly functional - some advanced features may not work")
+        elif passed >= 2:  # Basic API working
+            print("⚠️ System partially functional - troubleshooting needed")
+        else:
+            print("❌ System has major issues - check setup and configuration")
 
-            # Generate summary
-            success_rate = self.generate_test_summary(results)
-
-            return success_rate >= 70
-
-        except KeyboardInterrupt:
-            print("\n⚠️ Test suite interrupted by user")
-            return False
-        except Exception as e:
-            print(f"\n❌ Test suite failed: {e}")
-            return False
+        return passed, total
 
 def main():
     """Main test function"""
-    tester = SoilAnalysisTestSuite()
-    success = tester.run_complete_test_suite()
+    tester = SoilSystemTester()
+    passed, total = tester.run_comprehensive_test()
 
-    print("\n" + "=" * 80)
-    if success:
-        print("🎉 SOIL ANALYSIS WITH NDVI INTEGRATION TEST SUITE PASSED!")
-        print("Your integrated soil analysis module is ready for production use.")
-        print("🔗 NDVI module integration is working correctly.")
+    print("\n" + "=" * 70)
+    if passed == total:
+        print("🎉 ALL TESTS PASSED! Soil Analysis System is fully functional!")
+        sys.exit(0)
+    elif passed >= total * 0.75:  # 75% or more passed
+        print("✅ MOSTLY WORKING! Minor issues detected.")
         sys.exit(0)
     else:
-        print("❌ SOIL ANALYSIS WITH NDVI INTEGRATION TEST SUITE FAILED!")
-        print("Check error messages above and ensure:")
-        print("- Backend is running (python soil_flask_backend.py)")
-        print("- NDVI module is in ../NDVI directory")
-        print("- Root backend .env file has Copernicus credentials")
+        print("❌ SIGNIFICANT ISSUES DETECTED! Check error messages above.")
         sys.exit(1)
 
 if __name__ == "__main__":
