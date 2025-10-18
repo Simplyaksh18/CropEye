@@ -18,3 +18,12 @@ frontend/build/
 
 # SQLite Database
 backend/cropeye.db
+
+# Test output
+coverage.xml
+.coverage
+
+# Generated GIS data
+GIS/NDVI/sentinel_data/
+GIS/Soil/sentinel_data/
+

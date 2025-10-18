@@ -17,6 +17,9 @@ Author: CropEye1 System
 Date: October 18, 2025
 """
 
+from dotenv import load_dotenv
+load_dotenv(r"D:/CropEye1/backend/.env")
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os

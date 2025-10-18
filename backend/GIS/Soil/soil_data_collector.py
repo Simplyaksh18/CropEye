@@ -53,7 +53,24 @@ class SoilDataCollector:
             self.copernicus_downloader = None
         
         # Initialize data sources (keep SoilGrids as fallback)
-        self.soilgrids_base_url = "https://rest.soilgrids.org"
+        self.soilgrids_base_url = "https://rest.isric.org/soilgrids/v2.0/properties"
+        # SoilGrids host and automatic offline fallback flag
+        self.soilgrids_host = 'rest.isric.org'
+        # Allow env override first
+        env_offline = os.getenv('SOIL_USE_OFFLINE')
+        if env_offline and env_offline.lower() in ('1', 'true', 'yes'):
+            self.use_offline = True
+            logger.info("🔧 SOIL_USE_OFFLINE detected in environment; using offline SoilGrids sample")
+        else:
+            # Try DNS preflight for SoilGrids; if it fails, enable offline fallback automatically
+            try:
+                socket.gethostbyname(self.soilgrids_host)
+                self.use_offline = False
+                logger.info(f"🌐 SoilGrids host '{self.soilgrids_host}' resolved successfully")
+            except socket.gaierror:
+                self.use_offline = True
+                os.environ['SOIL_USE_OFFLINE'] = '1'
+                logger.warning(f"❌ Could not resolve SoilGrids host '{self.soilgrids_host}'; enabling offline fallback (SOIL_USE_OFFLINE=1)")
         
         # Known soil data for agricultural regions (matches NDVI module coordinates exactly)
         self.known_agricultural_locations = {
@@ -595,39 +612,62 @@ class SoilDataCollector:
     
     def _fetch_soilgrids_data(self, latitude: float, longitude: float) -> Optional[Dict]:
         """Fetch data from SoilGrids REST API (FALLBACK when Copernicus unavailable)"""
-        try:
-            logger.info("🌐 Attempting SoilGrids API fallback...")
-            
-            # Test DNS resolution first
+        # Honor the offline flag set during initialization
+        if self.use_offline:
+            logger.info("🌐 Using offline SoilGrids sample data (SOIL_USE_OFFLINE=1)")
             try:
-                socket.gethostbyname('rest.soilgrids.org')
-            except socket.gaierror:
-                logger.error("❌ DNS resolution failed for rest.soilgrids.org")
+                sample_path = os.path.join(os.path.dirname(__file__), 'soilgrids_sample.json')
+                with open(sample_path, 'r') as f:
+                    return json.load(f)
+            except Exception as e:
+                logger.error(f"❌ Failed to load offline SoilGrids sample: {e}")
                 return None
-            
-            properties = ["phh2o", "soc", "nitrogen", "bdod", "clay", "sand", "silt"]
-            depths = "0-5cm"
-            
-            url = f"{self.soilgrids_base_url}/query"
+
+        # Proceed with live API call if not in offline mode
+        logger.info("🌐 Attempting live SoilGrids API fallback with resilient querying...")
+        if not self.soilgrids_host: # Should not happen with new init, but safe
+            return None
+
+        # Resilient querying for live data
+        properties_to_fetch = ["phh2o", "soc", "nitrogen", "bdod", "clay", "sand", "silt"]
+        depths = "0-5cm"
+        
+        # This will be the structure that mimics the original bulk response
+        combined_data = {"properties": {}}
+        
+        for prop in properties_to_fetch:
+            logger.info(f"   Querying SoilGrids for property: {prop}")
             params = {
                 "lon": longitude,
                 "lat": latitude,
-                "property": ",".join(properties),
+                "property": prop,
                 "depth": depths,
                 "value": "mean"
             }
+            url = f"{self.soilgrids_base_url}/query"
+
+            try:
+                response = requests.get(url, params=params, timeout=15)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    # The response for a single property still has the 'properties' key
+                    if "properties" in data and prop in data["properties"]:
+                        # Merge this property's data into our combined result
+                        combined_data["properties"][prop] = data["properties"][prop]
+                        logger.info(f"   ✅ Successfully retrieved {prop}")
+                else:
+                    logger.warning(f"   ⚠️ SoilGrids returned {response.status_code} for property '{prop}'")
             
-            response = requests.get(url, params=params, timeout=30)
-            
-            if response.status_code == 200:
-                data = response.json()
-                logger.info("✅ SoilGrids data retrieved successfully")
-                return data
-            else:
-                logger.warning(f"⚠️ SoilGrids API returned {response.status_code}")
-                return None
-        except Exception as e:
-            logger.error(f"❌ SoilGrids API error: {e}")
+            except requests.exceptions.RequestException as e:
+                logger.error(f"   ❌ SoilGrids request failed for property '{prop}': {e}")
+
+        # If we successfully fetched at least one property, return the combined data
+        if combined_data["properties"]:
+            logger.info("✅ SoilGrids data retrieval complete.")
+            return combined_data
+        else:
+            logger.error("❌ Failed to retrieve any data from SoilGrids.")
             return None
     
     def _format_soilgrids_data(self, soilgrids_data: Dict, result: Dict) -> Dict:

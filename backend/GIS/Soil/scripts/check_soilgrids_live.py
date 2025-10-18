@@ -5,7 +5,7 @@ except Exception as e:
     requests = None
 import json
 
-host = 'rest.soilgrids.org'
+host = 'rest.isric.org'
 lat = 12.9716
 lon = 77.5946
 
@@ -19,7 +19,7 @@ except Exception as e:
 if not requests:
     print('\nrequests library not available in this environment; cannot perform HTTP request')
 else:
-    url = f'https://{host}/query?lon={lon}&lat={lat}&property=phh2o,soc,nitrogen,bdod,clay,sand,silt&depth=0-5cm&value=mean'
+    url = f'https://{host}/soilgrids/v2.0/properties/query?lon={lon}&lat={lat}&property=phh2o,soc,nitrogen,bdod,clay,sand,silt&depth=0-5cm&value=mean'
     print('\nRequesting:', url)
     try:
         r = requests.get(url, timeout=15)
