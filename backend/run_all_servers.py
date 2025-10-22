@@ -11,7 +11,7 @@ import os
 import time
 
 # Get the base directory of the backend
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 # Define the servers to run
 servers = {
@@ -30,7 +30,19 @@ servers = {
     "Weather Service": {
         "script": os.path.join(BASE_DIR, 'GIS', 'Weather', 'weather_flask_backend.py'),
         "port": 5003
-    }
+    },
+    "Crop Service": {
+        "script": os.path.join(BASE_DIR, 'GIS', 'Crop', 'crop_flask_backend.py'),
+        "port": 5004
+    },
+    "Water Service": {
+        "script": os.path.join(BASE_DIR, 'GIS', 'Water', 'water_flask_backend.py'),
+        "port": 5005
+    },
+    "Pest & Disease Service": {
+        "script": os.path.join(BASE_DIR, 'GIS', 'Pest', 'pest_flask_backend.py'),
+        "port": 5006
+    },
 }
 
 def main():

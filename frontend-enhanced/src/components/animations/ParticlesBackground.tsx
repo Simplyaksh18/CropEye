@@ -94,7 +94,9 @@ export const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({
   speed = 0.2,
   spread = 10,
   baseSize = 100,
-  mouseInteraction = true,
+  // Default to no mouse interaction so background is purely decorative
+  // unless explicitly enabled (for example after login).
+  mouseInteraction = false,
   className = "",
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -166,15 +168,7 @@ export const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({
       cancelAnimationFrame(animationId);
       window.removeEventListener("resize", resizeCanvas);
     };
-  }, [
-    mousePosition,
-    count,
-    speed,
-    spread,
-    baseSize,
-    particleColor,
-    mouseInteraction,
-  ]);
+  }, [count, speed, spread, baseSize, particleColor, mouseInteraction]);
 
   return (
     <canvas

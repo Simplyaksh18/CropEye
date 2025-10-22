@@ -159,12 +159,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return { success: false, error: data?.message || "Registration failed" };
     } catch (err) {
       const e = err as {
-        response?: { data?: { message?: string } };
+        response?: { status?: number; data?: Record<string, unknown> };
         message?: string;
       };
+      // Surface status and server body for easier debugging (dev only)
+      const status = e.response?.status;
+      const body = e.response?.data as Record<string, unknown> | undefined;
+      const bodyMessage =
+        body && typeof body === "object" && "message" in body
+          ? String((body as { message?: unknown }).message)
+          : undefined;
       const msg =
-        e.response?.data?.message || e.message || "Registration failed";
-      return { success: false, error: msg };
+        bodyMessage ||
+        (body && JSON.stringify(body)) ||
+        e.message ||
+        "Registration failed";
+
+      console.error("Register error", { status, body, message: e.message });
+      return {
+        success: false,
+        error: status ? `HTTP ${status}: ${msg}` : msg,
+      };
     }
   };
 

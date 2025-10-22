@@ -6,6 +6,7 @@ import { Mail, Lock, LogIn } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { LiquidChrome } from "../components/animations/LiquidChrome";
 import { GradientText } from "../components/animations/GradientText";
+import CropeyeLogo from "../assets/cropeye-logo.svg";
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -34,18 +35,21 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      <LiquidChrome />
+      <LiquidChrome className="pointer-events-none" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative z-10 w-full max-w-md mx-4"
+        className="relative z-20 w-full max-w-md mx-4 pointer-events-auto"
       >
-        <div className="bg-white/10 dark:bg-black/30 backdrop-blur-2xl rounded-3xl p-8 border border-white/20 shadow-2xl">
-          <div className="text-center mb-8">
-            <GradientText text="CropEye" className="text-4xl mb-2" />
-            <p className="text-white/80">Sign in to your dashboard</p>
+        <div className="bg-gray-950/30 backdrop-blur-lg rounded-2xl p-8 border border-white/10 shadow-2xl shadow-black/40 ring-1 ring-inset ring-white/10">
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <img src={CropeyeLogo} alt="CropEye" className="w-12 h-12" />
+            <div className="text-center">
+              <GradientText text="CropEye" className="text-4xl mb-0" />
+              <p className="text-white/80">Sign in to your dashboard</p>
+            </div>
           </div>
 
           {error && (

@@ -61,8 +61,24 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///cropeye.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Allow local dev frontends
-CORS(app, resources={r"/api/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000"]}}, supports_credentials=True)
+# Allow local dev frontends (include common dev ports like 3000 and Vite's 5173)
+CORS(
+    app,
+    resources={
+        r"/api/*": {
+                "origins": [
+                    "http://localhost:3000",
+                    "http://127.0.0.1:3000",
+                    "http://localhost:5173",
+                    "http://127.0.0.1:5173",
+                    # Vite may fall back to another port (5174) when 5173 is in use.
+                    "http://localhost:5174",
+                    "http://127.0.0.1:5174",
+                ]
+        }
+    },
+    supports_credentials=True,
+)
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
 # use Werkzeug security functions instead of flask_bcrypt; no app-level bcrypt instance required

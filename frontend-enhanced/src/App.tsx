@@ -31,15 +31,7 @@ function App() {
       <AuthProvider>
         <LocationProvider>
           <Router>
-            {/* Global Animations */}
             <SplashCursor />
-            <ParticlesBackground
-              count={700}
-              speed={0.2}
-              spread={10}
-              baseSize={100}
-              mouseInteraction={true}
-            />
 
             <Routes>
               {/* Public Routes */}
@@ -51,7 +43,18 @@ function App() {
                 path="/"
                 element={
                   <ProtectedRoute>
-                    <MainLayout />
+                    <>
+                      <ParticlesBackground
+                        count={700}
+                        speed={0.2}
+                        spread={10}
+                        baseSize={100}
+                        mouseInteraction={true}
+                      />
+                      <MainLayout>
+                        {/* Outlet will be rendered here */}
+                      </MainLayout>
+                    </>
                   </ProtectedRoute>
                 }
               >

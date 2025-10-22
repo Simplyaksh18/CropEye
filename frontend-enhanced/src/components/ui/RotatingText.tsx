@@ -1,3 +1,30 @@
+import React, { useEffect, useState } from "react";
+
+interface Props {
+  items: string[];
+  interval?: number;
+  className?: string;
+}
+
+export const RotatingText: React.FC<Props> = ({
+  items,
+  interval = 2500,
+  className = "",
+}) => {
+  const [idx, setIdx] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(
+      () => setIdx((i) => (i + 1) % items.length),
+      interval
+    );
+    return () => clearInterval(t);
+  }, [items.length, interval]);
+
+  return <span className={className}>{items[idx]}</span>;
+};
+
+export default RotatingText;
 // src/components/ui/RotatingText.tsx
 // Cyclically displays the five main GIS modules
 

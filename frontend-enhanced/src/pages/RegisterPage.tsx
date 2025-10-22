@@ -6,6 +6,7 @@ import { UserPlus } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { LiquidChrome } from "../components/animations/LiquidChrome";
 import { GradientText } from "../components/animations/GradientText";
+import CropeyeLogo from "../assets/cropeye-logo.svg";
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -49,18 +50,21 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden py-8">
-      <LiquidChrome />
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      <LiquidChrome className="pointer-events-none" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative z-10 w-full max-w-md mx-4"
+        className="relative z-20 w-full max-w-lg mx-4 pointer-events-auto"
       >
-        <div className="bg-white/10 dark:bg-black/30 backdrop-blur-2xl rounded-3xl p-8 border border-white/20 shadow-2xl">
-          <div className="text-center mb-6">
-            <GradientText text="Join CropEye" className="text-3xl mb-2" />
-            <p className="text-white/80 text-sm">Create your account</p>
+        <div className="bg-gradient-to-br from-white/5 to-white/2 backdrop-blur-2xl rounded-3xl p-10 border border-white/10 shadow-2xl shadow-black/50">
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <img src={CropeyeLogo} alt="CropEye" className="w-10 h-10" />
+            <div className="text-center">
+              <GradientText text="Join CropEye" className="text-3xl mb-0" />
+              <p className="text-white/80 text-sm">Create your account</p>
+            </div>
           </div>
 
           {error && (

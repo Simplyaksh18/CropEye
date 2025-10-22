@@ -7,7 +7,9 @@ import React, { useRef, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-const LiquidChromeShader: React.FC = () => {
+const LiquidChromeShader: React.FC<{ interactive?: boolean }> = ({
+  interactive = false,
+}) => {
   const meshRef = useRef<THREE.Mesh>(null);
 
   // Shader material with exact parameters
@@ -17,9 +19,10 @@ const LiquidChromeShader: React.FC = () => {
       u_colorMix: { value: new THREE.Vector3(0.0, 0.3, 0.1) }, // Red 0, Green 0.3, Blue 0.1
       u_speed: { value: 0.41 },
       u_amplitude: { value: 0.3 },
-      u_interaction: { value: 1.0 }, // Enabled
+      // u_interaction will be set from prop below
+      u_interaction: { value: interactive ? 1.0 : 0.0 },
     }),
-    []
+    [interactive]
   );
 
   const vertexShader = `
@@ -79,7 +82,9 @@ const LiquidChromeShader: React.FC = () => {
     if (meshRef.current) {
       const material = meshRef.current.material as THREE.ShaderMaterial;
       material.uniforms.u_time.value =
-        clock.getElapsedTime() * uniforms.u_speed.value;
+        clock.getElapsedTime() * (uniforms.u_speed?.value ?? 1.0);
+      // Keep uniform for interaction in sync in case parent toggles it
+      material.uniforms.u_interaction.value = uniforms.u_interaction.value;
     }
   });
 
@@ -96,13 +101,23 @@ const LiquidChromeShader: React.FC = () => {
   );
 };
 
-export const LiquidChrome: React.FC<{ className?: string }> = ({
+export const LiquidChrome: React.FC<{
+  className?: string;
+  interactive?: boolean;
+}> = ({
   className = "",
+  interactive = false,
 }) => {
+  // When interactive=true we allow pointer events and enable
+  // the shader interaction uniform. Otherwise, the background
+  // is strictly decorative and won't block inputs.
   return (
-    <div className={`fixed inset-0 ${className}`} style={{ zIndex: 0 }}>
+    <div
+      className={`fixed inset-0 ${className}`}
+      style={{ zIndex: interactive ? 5 : 0, pointerEvents: interactive ? "auto" : "none" }}
+    >
       <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
-        <LiquidChromeShader />
+        <LiquidChromeShader interactive={interactive} />
       </Canvas>
     </div>
   );
