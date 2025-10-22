@@ -1,0 +1,123 @@
+// src/components/animations/LiquidChrome.tsx
+// Liquid chrome background for login page
+// Color Mix: Red 0, Green 0.3, Blue 0.1
+// Speed: 0.41, Amplitude: 0.3, Interaction: Enabled
+
+import React, { useRef, useMemo } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import * as THREE from "three";
+
+const LiquidChromeShader: React.FC = () => {
+  const meshRef = useRef<THREE.Mesh>(null);
+
+  // Shader material with exact parameters
+  const uniforms = useMemo(
+    () => ({
+      u_time: { value: 0 },
+      u_colorMix: { value: new THREE.Vector3(0.0, 0.3, 0.1) }, // Red 0, Green 0.3, Blue 0.1
+      u_speed: { value: 0.41 },
+      u_amplitude: { value: 0.3 },
+      u_interaction: { value: 1.0 }, // Enabled
+    }),
+    []
+  );
+
+  const vertexShader = `
+    varying vec2 vUv;
+    varying vec3 vPosition;
+    uniform float u_time;
+    uniform float u_amplitude;
+    
+    void main() {
+      vUv = uv;
+      vPosition = position;
+      
+      vec3 pos = position;
+      float wave = sin(pos.x * 2.0 + u_time) * u_amplitude;
+      wave += sin(pos.y * 3.0 + u_time * 1.5) * u_amplitude * 0.5;
+      pos.z += wave;
+      
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+    }
+  `;
+
+  const fragmentShader = `
+    uniform float u_time;
+    uniform vec3 u_colorMix;
+    varying vec2 vUv;
+    varying vec3 vPosition;
+    
+    void main() {
+      vec2 uv = vUv;
+      
+      // Liquid distortion
+      vec2 distortion = vec2(
+        sin(uv.y * 10.0 + u_time),
+        cos(uv.x * 10.0 + u_time)
+      ) * 0.1;
+      
+      uv += distortion;
+      
+      // Chrome-like gradient
+      vec3 color1 = vec3(0.1, 0.1, 0.1);
+      vec3 color2 = vec3(0.9, 0.9, 0.9);
+      vec3 color3 = u_colorMix;
+      
+      float pattern = sin(uv.x * 15.0 + u_time) * cos(uv.y * 15.0 + u_time);
+      vec3 color = mix(color1, color2, pattern);
+      color = mix(color, color3, 0.3);
+      
+      // Chrome reflections
+      float reflection = pow(abs(sin(vPosition.z * 2.0 + u_time)), 2.0);
+      color += vec3(reflection * 0.5);
+      
+      gl_FragColor = vec4(color, 1.0);
+    }
+  `;
+
+  useFrame(({ clock }) => {
+    if (meshRef.current) {
+      const material = meshRef.current.material as THREE.ShaderMaterial;
+      material.uniforms.u_time.value =
+        clock.getElapsedTime() * uniforms.u_speed.value;
+    }
+  });
+
+  return (
+    <mesh ref={meshRef} scale={[2, 2, 1]}>
+      <planeGeometry args={[10, 10, 64, 64]} />
+      <shaderMaterial
+        vertexShader={vertexShader}
+        fragmentShader={fragmentShader}
+        uniforms={uniforms}
+        side={THREE.DoubleSide}
+      />
+    </mesh>
+  );
+};
+
+export const LiquidChrome: React.FC<{ className?: string }> = ({
+  className = "",
+}) => {
+  return (
+    <div className={`fixed inset-0 ${className}`} style={{ zIndex: 0 }}>
+      <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
+        <LiquidChromeShader />
+      </Canvas>
+    </div>
+  );
+};
+
+// Usage in Login Page:
+// import { LiquidChrome } from '@/components/animations/LiquidChrome';
+//
+// export const LoginPage = () => {
+//   return (
+//     <div className="relative min-h-screen">
+//       <LiquidChrome />
+//       <div className="relative z-10">
+//         {/* Login form content */}
+//       </div>
+//     </div>
+//   );
+// };
