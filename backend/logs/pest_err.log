@@ -1,0 +1,52 @@
+2025-10-19 20:25:03,582 - __main__ - INFO - \u2705 Pest & Disease Detector initialized successfully
+2025-10-19 20:25:03,628 - __main__ - INFO - ================================================================================
+2025-10-19 20:25:03,628 - __main__ - INFO - \U0001f41b PEST & DISEASE DETECTION API STARTING
+2025-10-19 20:25:03,628 - __main__ - INFO - ================================================================================
+2025-10-19 20:25:03,628 - __main__ - INFO - 
+2025-10-19 20:25:03,628 - __main__ - INFO - \U0001f4e1 Integration URLs:
+2025-10-19 20:25:03,628 - __main__ - INFO -    • Weather API: http://127.0.0.1:5003
+2025-10-19 20:25:03,638 - __main__ - INFO - 
+2025-10-19 20:25:03,638 - __main__ - INFO - \U0001f310 Endpoints:
+2025-10-19 20:25:03,638 - __main__ - INFO -    • Health:          GET  /api/health
+2025-10-19 20:25:03,638 - __main__ - INFO -    • Detect Pests:    POST /api/pest/detect
+2025-10-19 20:25:03,638 - __main__ - INFO -    • Detect Disease:  POST /api/disease/detect
+2025-10-19 20:25:03,638 - __main__ - INFO -    • Comprehensive:   POST /api/threats/comprehensive
+2025-10-19 20:25:03,638 - __main__ - INFO -    • Integrated:      POST /api/threats/integrated
+2025-10-19 20:25:03,638 - __main__ - INFO -    • Pest Info:       GET  /api/pest/info/<name>
+2025-10-19 20:25:03,638 - __main__ - INFO -    • Disease Info:    GET  /api/disease/info/<name>
+2025-10-19 20:25:03,638 - __main__ - INFO -    • List Database:   GET  /api/database/list
+2025-10-19 20:25:03,638 - __main__ - INFO - 
+2025-10-19 20:25:03,638 - __main__ - INFO - ================================================================================
+2025-10-19 20:25:03,638 - __main__ - INFO - 
+2025-10-19 20:25:03,733 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5006
+ * Running on http://192.168.1.10:5006
+2025-10-19 20:25:03,733 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-10-19 20:25:03,749 - werkzeug - INFO -  * Restarting with watchdog (windowsapi)
+2025-10-19 20:25:05,419 - __main__ - INFO - \u2705 Pest & Disease Detector initialized successfully
+2025-10-19 20:25:05,456 - __main__ - INFO - ================================================================================
+2025-10-19 20:25:05,456 - __main__ - INFO - \U0001f41b PEST & DISEASE DETECTION API STARTING
+2025-10-19 20:25:05,456 - __main__ - INFO - ================================================================================
+2025-10-19 20:25:05,456 - __main__ - INFO - 
+2025-10-19 20:25:05,456 - __main__ - INFO - \U0001f4e1 Integration URLs:
+2025-10-19 20:25:05,456 - __main__ - INFO -    • Weather API: http://127.0.0.1:5003
+2025-10-19 20:25:05,456 - __main__ - INFO - 
+2025-10-19 20:25:05,456 - __main__ - INFO - \U0001f310 Endpoints:
+2025-10-19 20:25:05,456 - __main__ - INFO -    • Health:          GET  /api/health
+2025-10-19 20:25:05,456 - __main__ - INFO -    • Detect Pests:    POST /api/pest/detect
+2025-10-19 20:25:05,456 - __main__ - INFO -    • Detect Disease:  POST /api/disease/detect
+2025-10-19 20:25:05,456 - __main__ - INFO -    • Comprehensive:   POST /api/threats/comprehensive
+2025-10-19 20:25:05,456 - __main__ - INFO -    • Integrated:      POST /api/threats/integrated
+2025-10-19 20:25:05,456 - __main__ - INFO -    • Pest Info:       GET  /api/pest/info/<name>
+2025-10-19 20:25:05,472 - __main__ - INFO -    • Disease Info:    GET  /api/disease/info/<name>
+2025-10-19 20:25:05,472 - __main__ - INFO -    • List Database:   GET  /api/database/list
+2025-10-19 20:25:05,472 - __main__ - INFO - 
+2025-10-19 20:25:05,472 - __main__ - INFO - ================================================================================
+2025-10-19 20:25:05,472 - __main__ - INFO - 
+2025-10-19 20:25:05,519 - werkzeug - WARNING -  * Debugger is active!
+2025-10-19 20:25:05,541 - werkzeug - INFO -  * Debugger PIN: 211-845-863
+2025-10-19 20:25:05,583 - __main__ - INFO - \U0001f30d Integrated threat assessment for (30.3398, 76.3869), crop: wheat
+2025-10-19 20:25:05,615 - __main__ - INFO - Weather data retrieved from service
+2025-10-19 20:25:05,615 - __main__ - INFO - \u2705 Threats: 1 detected
+2025-10-19 20:25:05,615 - werkzeug - INFO - 127.0.0.1 - - [19/Oct/2025 20:25:05] "POST /api/threats/integrated HTTP/1.1" 200 -

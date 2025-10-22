@@ -1,0 +1,96 @@
+INFO:openweather_api:\u2705 OpenWeatherMap API initialized
+INFO:weather_data_collector:\u2705 OpenWeatherMap API ready
+INFO:openmeteo_api:\u2705 OpenMeteo API initialized (FREE, no authentication)
+INFO:weather_data_collector:\u2705 OpenMeteo API ready (FREE historical data)
+INFO:weather_data_collector:\u2705 Weather Data Collector initialized (SIMPLIFIED VERSION)
+INFO:__main__:\u2705 Weather Data Collector initialized
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5003
+ * Running on http://192.168.1.10:5003
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with watchdog (windowsapi)
+INFO:openweather_api:\u2705 OpenWeatherMap API initialized
+INFO:weather_data_collector:\u2705 OpenWeatherMap API ready
+INFO:openmeteo_api:\u2705 OpenMeteo API initialized (FREE, no authentication)
+INFO:weather_data_collector:\u2705 OpenMeteo API ready (FREE historical data)
+INFO:weather_data_collector:\u2705 Weather Data Collector initialized (SIMPLIFIED VERSION)
+INFO:__main__:\u2705 Weather Data Collector initialized
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 211-845-863
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 19:54:33] "[31m[1mPOST /api/weather/current HTTP/1.1[0m" 405 -
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 19:54:33] "[31m[1mPOST /api/weather/current HTTP/1.1[0m" 405 -
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 19:55:05] "[31m[1mPOST /api/weather/current HTTP/1.1[0m" 405 -
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 19:55:05] "[31m[1mPOST /api/weather/current HTTP/1.1[0m" 405 -
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 19:55:18] "[31m[1mPOST /api/weather/current HTTP/1.1[0m" 405 -
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 19:55:18] "[31m[1mPOST /api/weather/current HTTP/1.1[0m" 405 -
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 19:57:32] "[31m[1mPOST /api/weather/current HTTP/1.1[0m" 405 -
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 19:57:32] "[31m[1mPOST /api/weather/current HTTP/1.1[0m" 405 -
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 19:58:05] "[31m[1mPOST /api/weather/current HTTP/1.1[0m" 405 -
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 19:58:05] "[31m[1mPOST /api/weather/current HTTP/1.1[0m" 405 -
+INFO:__main__:\U0001f324\ufe0f Current weather request: (30.3398, 76.3869)
+INFO:weather_data_collector:Current weather request for (30.3398, 76.3869) from source: unknown
+INFO:openweather_api:\u2705 Current weather retrieved for 30.3398, 76.3869
+INFO:__main__:\u2705 Current weather retrieved for (30.3398, 76.3869)
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 20:00:24] "GET /api/weather/current?lat=30.3398&lng=76.3869 HTTP/1.1" 200 -
+INFO:__main__:\U0001f324\ufe0f Current weather request: (30.3398, 76.3869)
+INFO:weather_data_collector:Current weather request for (30.3398, 76.3869) from source: unknown
+INFO:__main__:\u2705 Current weather retrieved for (30.3398, 76.3869)
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 20:00:24] "GET /api/weather/current?lat=30.3398&lng=76.3869 HTTP/1.1" 200 -
+INFO:__main__:\U0001f324\ufe0f Current weather request: (30.3398, 76.3869)
+INFO:weather_data_collector:Current weather request for (30.3398, 76.3869) from source: unknown
+INFO:__main__:\u2705 Current weather retrieved for (30.3398, 76.3869)
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 20:01:12] "GET /api/weather/current?lat=30.3398&lng=76.3869 HTTP/1.1" 200 -
+INFO:__main__:\U0001f324\ufe0f Current weather request: (30.3398, 76.3869)
+INFO:weather_data_collector:Current weather request for (30.3398, 76.3869) from source: unknown
+INFO:__main__:\u2705 Current weather retrieved for (30.3398, 76.3869)
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 20:05:38] "GET /api/weather/current?lat=30.3398&lng=76.3869 HTTP/1.1" 200 -
+INFO:__main__:\U0001f324\ufe0f Current weather request: (30.3398, 76.3869)
+INFO:weather_data_collector:Current weather request for (30.3398, 76.3869) from source: unknown
+INFO:__main__:\u2705 Current weather retrieved for (30.3398, 76.3869)
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 20:07:38] "GET /api/weather/current?lat=30.3398&lng=76.3869 HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'C:\\Users\\akshi\\anaconda3\\pkgs\\zstandard-0.25.0-py313h5fd188c_0\\Lib\\site-packages\\zstandard\\__init__.py', reloading
+INFO:werkzeug: * Detected change in 'C:\\Users\\akshi\\anaconda3\\pkgs\\python-3.13.7-h260b955_100_cp313\\Lib\\importlib\\__init__.py', reloading
+INFO:werkzeug: * Restarting with watchdog (windowsapi)
+INFO:openweather_api:\u2705 OpenWeatherMap API initialized
+INFO:weather_data_collector:\u2705 OpenWeatherMap API ready
+INFO:openmeteo_api:\u2705 OpenMeteo API initialized (FREE, no authentication)
+INFO:weather_data_collector:\u2705 OpenMeteo API ready (FREE historical data)
+INFO:weather_data_collector:\u2705 Weather Data Collector initialized (SIMPLIFIED VERSION)
+INFO:__main__:\u2705 Weather Data Collector initialized
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 211-845-863
+INFO:werkzeug: * Detected change in 'C:\\Users\\akshi\\anaconda3\\Lib\\site-packages\\pyparsing\\core.py', reloading
+INFO:werkzeug: * Restarting with watchdog (windowsapi)
+INFO:openweather_api:\u2705 OpenWeatherMap API initialized
+INFO:weather_data_collector:\u2705 OpenWeatherMap API ready
+INFO:openmeteo_api:\u2705 OpenMeteo API initialized (FREE, no authentication)
+INFO:weather_data_collector:\u2705 OpenMeteo API ready (FREE historical data)
+INFO:weather_data_collector:\u2705 Weather Data Collector initialized (SIMPLIFIED VERSION)
+INFO:__main__:\u2705 Weather Data Collector initialized
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 211-845-863
+INFO:werkzeug: * Detected change in 'C:\\Users\\akshi\\anaconda3\\envs\\cropeye\\Lib\\importlib\\__init__.py', reloading
+INFO:werkzeug: * Restarting with watchdog (windowsapi)
+INFO:openweather_api:\u2705 OpenWeatherMap API initialized
+INFO:weather_data_collector:\u2705 OpenWeatherMap API ready
+INFO:openmeteo_api:\u2705 OpenMeteo API initialized (FREE, no authentication)
+INFO:weather_data_collector:\u2705 OpenMeteo API ready (FREE historical data)
+INFO:weather_data_collector:\u2705 Weather Data Collector initialized (SIMPLIFIED VERSION)
+INFO:__main__:\u2705 Weather Data Collector initialized
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 211-845-863
+INFO:__main__:\U0001f324\ufe0f Current weather request: (30.3398, 76.3869)
+INFO:weather_data_collector:Current weather request for (30.3398, 76.3869) from source: unknown
+INFO:openweather_api:\u2705 Current weather retrieved for 30.3398, 76.3869
+INFO:__main__:\u2705 Current weather retrieved for (30.3398, 76.3869)
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 20:10:13] "GET /api/weather/current?lat=30.3398&lng=76.3869 HTTP/1.1" 200 -
+INFO:__main__:\U0001f324\ufe0f Current weather request: (30.3398, 76.3869)
+INFO:weather_data_collector:Current weather request for (30.3398, 76.3869) from source: unknown
+INFO:__main__:\u2705 Current weather retrieved for (30.3398, 76.3869)
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 20:25:05] "GET /api/weather/current?lat=30.3398&lng=76.3869 HTTP/1.1" 200 -
+INFO:__main__:\U0001f324\ufe0f Current weather request: (30.3398, 76.3869)
+INFO:weather_data_collector:Current weather request for (30.3398, 76.3869) from source: unknown
+INFO:openweather_api:\u2705 Current weather retrieved for 30.3398, 76.3869
+INFO:__main__:\u2705 Current weather retrieved for (30.3398, 76.3869)
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 20:25:34] "GET /api/weather/current?lat=30.3398&lng=76.3869 HTTP/1.1" 200 -

@@ -46,6 +46,30 @@ curl -X POST http://localhost:5000/api/analyze-location \
   -d '{"latitude": 30.7333, "longitude": 76.7794}'
 ```
 
+### Smoke tests (integration)
+
+Run a small set of smoke tests that verify the main server and the proxied GIS microservices.
+
+Start the API server in one terminal (the server must be running):
+
+```powershell
+# set the microservice URLs (adjust ports if you run services on other ports)
+$env:NDVI_API_URL = 'http://localhost:5001'
+$env:SOIL_API_URL = 'http://localhost:5002'
+$env:WEATHER_API_URL = 'http://localhost:5003'
+$env:CROP_API_URL = 'http://localhost:5004'
+python app.py
+```
+
+Then, in another terminal, run the pytest smoke tests (requires pytest and requests):
+
+```powershell
+pip install pytest requests
+pytest -q tests/test_integration.py
+```
+
+The tests will skip if the microservices are not reachable and will report reachability/status codes otherwise.
+
 ## 📍 API Endpoints
 
 ### `POST /api/analyze-location`

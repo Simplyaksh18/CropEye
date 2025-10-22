@@ -1,0 +1,56 @@
+2025-10-19 20:10:09,454 - __main__ - INFO - \u2705 Water Management System initialized successfully
+2025-10-19 20:10:09,502 - __main__ - INFO - ================================================================================
+2025-10-19 20:10:09,502 - __main__ - INFO - \U0001f4a7 WATER MANAGEMENT API STARTING
+2025-10-19 20:10:09,502 - __main__ - INFO - ================================================================================
+2025-10-19 20:10:09,502 - __main__ - INFO - 
+2025-10-19 20:10:09,502 - __main__ - INFO - \U0001f4e1 Integration URLs:
+2025-10-19 20:10:09,502 - __main__ - INFO -    • Soil API:    http://127.0.0.1:5002
+2025-10-19 20:10:09,502 - __main__ - INFO -    • Weather API: http://127.0.0.1:5003
+2025-10-19 20:10:09,502 - __main__ - INFO - 
+2025-10-19 20:10:09,502 - __main__ - INFO - \U0001f310 Endpoints:
+2025-10-19 20:10:09,502 - __main__ - INFO -    • Health:           GET  /api/health
+2025-10-19 20:10:09,502 - __main__ - INFO -    • Calculate ET0:    POST /api/water/et0/calculate
+2025-10-19 20:10:09,511 - __main__ - INFO -    • Calculate Irrig:  POST /api/water/irrigation/calculate
+2025-10-19 20:10:09,511 - __main__ - INFO -    • Integrated:       POST /api/water/irrigation/integrated
+2025-10-19 20:10:09,511 - __main__ - INFO -    • Water Stress:     POST /api/water/stress/calculate
+2025-10-19 20:10:09,511 - __main__ - INFO -    • List Crops:       GET  /api/water/crops
+2025-10-19 20:10:09,511 - __main__ - INFO - 
+2025-10-19 20:10:09,511 - __main__ - INFO - ================================================================================
+2025-10-19 20:10:09,511 - __main__ - INFO - 
+2025-10-19 20:10:09,581 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5005
+ * Running on http://192.168.1.10:5005
+2025-10-19 20:10:09,581 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-10-19 20:10:09,596 - werkzeug - INFO -  * Restarting with watchdog (windowsapi)
+2025-10-19 20:10:11,312 - __main__ - INFO - \u2705 Water Management System initialized successfully
+2025-10-19 20:10:11,312 - __main__ - INFO - ================================================================================
+2025-10-19 20:10:11,319 - __main__ - INFO - \U0001f4a7 WATER MANAGEMENT API STARTING
+2025-10-19 20:10:11,319 - __main__ - INFO - ================================================================================
+2025-10-19 20:10:11,319 - __main__ - INFO - 
+2025-10-19 20:10:11,319 - __main__ - INFO - \U0001f4e1 Integration URLs:
+2025-10-19 20:10:11,319 - __main__ - INFO -    • Soil API:    http://127.0.0.1:5002
+2025-10-19 20:10:11,319 - __main__ - INFO -    • Weather API: http://127.0.0.1:5003
+2025-10-19 20:10:11,319 - __main__ - INFO - 
+2025-10-19 20:10:11,319 - __main__ - INFO - \U0001f310 Endpoints:
+2025-10-19 20:10:11,319 - __main__ - INFO -    • Health:           GET  /api/health
+2025-10-19 20:10:11,319 - __main__ - INFO -    • Calculate ET0:    POST /api/water/et0/calculate
+2025-10-19 20:10:11,319 - __main__ - INFO -    • Calculate Irrig:  POST /api/water/irrigation/calculate
+2025-10-19 20:10:11,319 - __main__ - INFO -    • Integrated:       POST /api/water/irrigation/integrated
+2025-10-19 20:10:11,319 - __main__ - INFO -    • Water Stress:     POST /api/water/stress/calculate
+2025-10-19 20:10:11,319 - __main__ - INFO -    • List Crops:       GET  /api/water/crops
+2025-10-19 20:10:11,319 - __main__ - INFO - 
+2025-10-19 20:10:11,319 - __main__ - INFO - ================================================================================
+2025-10-19 20:10:11,319 - __main__ - INFO - 
+2025-10-19 20:10:11,367 - werkzeug - WARNING -  * Debugger is active!
+2025-10-19 20:10:11,383 - werkzeug - INFO -  * Debugger PIN: 211-845-863
+2025-10-19 20:10:12,483 - __main__ - INFO - \U0001f30d Integrated irrigation for (30.3398, 76.3869), crop: wheat
+2025-10-19 20:10:13,274 - __main__ - INFO - Weather data retrieved from service
+2025-10-19 20:10:13,306 - __main__ - INFO - Soil data retrieved from service
+2025-10-19 20:10:13,306 - __main__ - ERROR - \u274c Error in integrated irrigation: 'dict' object has no attribute 'lower'
+2025-10-19 20:10:13,306 - werkzeug - INFO - 127.0.0.1 - - [19/Oct/2025 20:10:13] "[35m[1mPOST /api/water/irrigation/integrated HTTP/1.1[0m" 500 -
+2025-10-19 20:25:33,952 - __main__ - INFO - \U0001f30d Integrated irrigation for (30.3398, 76.3869), crop: wheat
+2025-10-19 20:25:34,776 - __main__ - INFO - Weather data retrieved from service
+2025-10-19 20:25:34,793 - __main__ - INFO - Soil data retrieved from service
+2025-10-19 20:25:34,793 - __main__ - ERROR - \u274c Error in integrated irrigation: 'dict' object has no attribute 'lower'
+2025-10-19 20:25:34,793 - werkzeug - INFO - 127.0.0.1 - - [19/Oct/2025 20:25:34] "[35m[1mPOST /api/water/irrigation/integrated HTTP/1.1[0m" 500 -

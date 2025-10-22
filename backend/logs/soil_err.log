@@ -1,0 +1,152 @@
+INFO:sentinel_downloader:Username configured: True
+INFO:sentinel_downloader:Password configured: True
+INFO:ndvi_integration:\u2705 NDVI module integration successful via GIS/NDVI files
+INFO:env_credentials:\U0001f527 Environment variables set for current session
+INFO:env_credentials:\U0001f527 Environment variables set for current session
+INFO:sentinel_downloader:Username configured: True
+INFO:sentinel_downloader:Password configured: True
+INFO:soil_data_downloader:\u2705 Connected to existing Sentinel downloader
+INFO:soil_data_downloader:\U0001f6f0\ufe0f Copernicus Soil Downloader initialized
+INFO:soil_data_downloader:   Credentials: \u2705 Available
+INFO:soil_data_downloader:   Sentinel Integration: \u2705 Available
+INFO:soil_data_collector:\u2705 Copernicus satellite downloader initialized
+INFO:soil_data_collector:\U0001f310 SoilGrids host 'rest.isric.org' resolved successfully
+INFO:soil_data_collector:\U0001f331 Soil Data Collector initialized
+INFO:soil_data_collector:   Known agricultural locations: 5
+INFO:soil_data_collector:   Copernicus satellite integration: \u2705 Available
+INFO:soil_data_collector:   NDVI integration: \u2705 Available
+INFO:__main__:\u2705 Soil Data Collector initialized successfully
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5002
+ * Running on http://192.168.1.10:5002
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with watchdog (windowsapi)
+INFO:sentinel_downloader:Username configured: True
+INFO:sentinel_downloader:Password configured: True
+INFO:ndvi_integration:\u2705 NDVI module integration successful via GIS/NDVI files
+INFO:env_credentials:\U0001f527 Environment variables set for current session
+INFO:env_credentials:\U0001f527 Environment variables set for current session
+INFO:sentinel_downloader:Username configured: True
+INFO:sentinel_downloader:Password configured: True
+INFO:soil_data_downloader:\u2705 Connected to existing Sentinel downloader
+INFO:soil_data_downloader:\U0001f6f0\ufe0f Copernicus Soil Downloader initialized
+INFO:soil_data_downloader:   Credentials: \u2705 Available
+INFO:soil_data_downloader:   Sentinel Integration: \u2705 Available
+INFO:soil_data_collector:\u2705 Copernicus satellite downloader initialized
+INFO:soil_data_collector:\U0001f310 SoilGrids host 'rest.isric.org' resolved successfully
+INFO:soil_data_collector:\U0001f331 Soil Data Collector initialized
+INFO:soil_data_collector:   Known agricultural locations: 5
+INFO:soil_data_collector:   Copernicus satellite integration: \u2705 Available
+INFO:soil_data_collector:   NDVI integration: \u2705 Available
+INFO:__main__:\u2705 Soil Data Collector initialized successfully
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 211-845-863
+INFO:__main__:\U0001f6f0\ufe0f Soil analysis request: (30.3398, 76.3869) [Source: unknown]
+INFO:soil_data_collector:\U0001f6f0\ufe0f Getting soil data for manual coordinates: 30.3398, 76.3869
+INFO:soil_data_collector:\U0001f3af Found known agricultural location: 30.3398,76.3869
+INFO:soil_data_collector:\u2705 Using verified agricultural survey data
+INFO:soil_data_collector:\U0001f33f Calculating NDVI-Soil correlation...
+INFO:ndvi_integration:\U0001f33f Getting NDVI data for 30.3398, 76.3869
+INFO:ndvi_integration:\u2705 Found exact match in NDVI module: Punjab Wheat Farm
+INFO:__main__:\u2705 Soil analysis complete: 0.95 confidence, 0.00s
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 20:01:17] "POST /api/soil/analyze HTTP/1.1" 200 -
+INFO:__main__:\U0001f6f0\ufe0f Soil analysis request: (30.3398, 76.3869) [Source: unknown]
+INFO:soil_data_collector:\U0001f6f0\ufe0f Getting soil data for manual coordinates: 30.3398, 76.3869
+INFO:soil_data_collector:\U0001f3af Found known agricultural location: 30.3398,76.3869
+INFO:soil_data_collector:\u2705 Using verified agricultural survey data
+INFO:soil_data_collector:\U0001f33f Calculating NDVI-Soil correlation...
+INFO:ndvi_integration:\U0001f33f Getting NDVI data for 30.3398, 76.3869
+INFO:ndvi_integration:\u2705 Found exact match in NDVI module: Punjab Wheat Farm
+INFO:__main__:\u2705 Soil analysis complete: 0.95 confidence, 0.00s
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 20:02:03] "POST /api/soil/analyze HTTP/1.1" 200 -
+INFO:__main__:\U0001f6f0\ufe0f Soil analysis request: (30.3398, 76.3869) [Source: unknown]
+INFO:soil_data_collector:\U0001f6f0\ufe0f Getting soil data for manual coordinates: 30.3398, 76.3869
+INFO:soil_data_collector:\U0001f3af Found known agricultural location: 30.3398,76.3869
+INFO:soil_data_collector:\u2705 Using verified agricultural survey data
+INFO:soil_data_collector:\U0001f33f Calculating NDVI-Soil correlation...
+INFO:ndvi_integration:\U0001f33f Getting NDVI data for 30.3398, 76.3869
+INFO:ndvi_integration:\u2705 Found exact match in NDVI module: Punjab Wheat Farm
+INFO:__main__:\u2705 Soil analysis complete: 0.95 confidence, 0.00s
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 20:05:38] "POST /api/soil/analyze HTTP/1.1" 200 -
+INFO:__main__:\U0001f6f0\ufe0f Soil analysis request: (30.3398, 76.3869) [Source: unknown]
+INFO:soil_data_collector:\U0001f6f0\ufe0f Getting soil data for manual coordinates: 30.3398, 76.3869
+INFO:soil_data_collector:\U0001f3af Found known agricultural location: 30.3398,76.3869
+INFO:soil_data_collector:\u2705 Using verified agricultural survey data
+INFO:soil_data_collector:\U0001f33f Calculating NDVI-Soil correlation...
+INFO:ndvi_integration:\U0001f33f Getting NDVI data for 30.3398, 76.3869
+INFO:ndvi_integration:\u2705 Found exact match in NDVI module: Punjab Wheat Farm
+INFO:__main__:\u2705 Soil analysis complete: 0.95 confidence, 0.00s
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 20:07:38] "POST /api/soil/analyze HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'C:\\Users\\akshi\\anaconda3\\pkgs\\zstandard-0.25.0-py313h5fd188c_0\\Lib\\site-packages\\zstandard\\__init__.py', reloading
+INFO:werkzeug: * Detected change in 'C:\\Users\\akshi\\anaconda3\\pkgs\\python-3.13.7-h260b955_100_cp313\\Lib\\importlib\\__init__.py', reloading
+INFO:werkzeug: * Restarting with watchdog (windowsapi)
+INFO:sentinel_downloader:Username configured: True
+INFO:sentinel_downloader:Password configured: True
+INFO:ndvi_integration:\u2705 NDVI module integration successful via GIS/NDVI files
+INFO:env_credentials:\U0001f527 Environment variables set for current session
+INFO:env_credentials:\U0001f527 Environment variables set for current session
+INFO:sentinel_downloader:Username configured: True
+INFO:sentinel_downloader:Password configured: True
+INFO:soil_data_downloader:\u2705 Connected to existing Sentinel downloader
+INFO:soil_data_downloader:\U0001f6f0\ufe0f Copernicus Soil Downloader initialized
+INFO:soil_data_downloader:   Credentials: \u2705 Available
+INFO:soil_data_downloader:   Sentinel Integration: \u2705 Available
+INFO:soil_data_collector:\u2705 Copernicus satellite downloader initialized
+INFO:soil_data_collector:\U0001f310 SoilGrids host 'rest.isric.org' resolved successfully
+INFO:soil_data_collector:\U0001f331 Soil Data Collector initialized
+INFO:soil_data_collector:   Known agricultural locations: 5
+INFO:soil_data_collector:   Copernicus satellite integration: \u2705 Available
+INFO:soil_data_collector:   NDVI integration: \u2705 Available
+INFO:__main__:\u2705 Soil Data Collector initialized successfully
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 211-845-863
+INFO:werkzeug: * Detected change in 'C:\\Users\\akshi\\anaconda3\\envs\\cropeye\\Lib\\importlib\\__init__.py', reloading
+INFO:werkzeug: * Restarting with watchdog (windowsapi)
+INFO:sentinel_downloader:Username configured: True
+INFO:sentinel_downloader:Password configured: True
+INFO:ndvi_integration:\u2705 NDVI module integration successful via GIS/NDVI files
+INFO:env_credentials:\U0001f527 Environment variables set for current session
+INFO:env_credentials:\U0001f527 Environment variables set for current session
+INFO:sentinel_downloader:Username configured: True
+INFO:sentinel_downloader:Password configured: True
+INFO:soil_data_downloader:\u2705 Connected to existing Sentinel downloader
+INFO:soil_data_downloader:\U0001f6f0\ufe0f Copernicus Soil Downloader initialized
+INFO:soil_data_downloader:   Credentials: \u2705 Available
+INFO:soil_data_downloader:   Sentinel Integration: \u2705 Available
+INFO:soil_data_collector:\u2705 Copernicus satellite downloader initialized
+INFO:soil_data_collector:\U0001f310 SoilGrids host 'rest.isric.org' resolved successfully
+INFO:soil_data_collector:\U0001f331 Soil Data Collector initialized
+INFO:soil_data_collector:   Known agricultural locations: 5
+INFO:soil_data_collector:   Copernicus satellite integration: \u2705 Available
+INFO:soil_data_collector:   NDVI integration: \u2705 Available
+INFO:__main__:\u2705 Soil Data Collector initialized successfully
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 211-845-863
+INFO:__main__:\U0001f6f0\ufe0f Soil analysis request: (30.3398, 76.3869) [Source: unknown]
+INFO:soil_data_collector:\U0001f6f0\ufe0f Getting soil data for manual coordinates: 30.3398, 76.3869
+INFO:soil_data_collector:\U0001f3af Found known agricultural location: 30.3398,76.3869
+INFO:soil_data_collector:\u2705 Using verified agricultural survey data
+INFO:soil_data_collector:\U0001f33f Calculating NDVI-Soil correlation...
+INFO:ndvi_integration:\U0001f33f Getting NDVI data for 30.3398, 76.3869
+INFO:ndvi_integration:\u2705 Found exact match in NDVI module: Punjab Wheat Farm
+INFO:__main__:\u2705 Soil analysis complete: 0.95 confidence, 0.00s
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 20:10:13] "POST /api/soil/analyze HTTP/1.1" 200 -
+INFO:__main__:\U0001f6f0\ufe0f Soil analysis request: (30.3398, 76.3869) [Source: unknown]
+INFO:soil_data_collector:\U0001f6f0\ufe0f Getting soil data for manual coordinates: 30.3398, 76.3869
+INFO:soil_data_collector:\U0001f3af Found known agricultural location: 30.3398,76.3869
+INFO:soil_data_collector:\u2705 Using verified agricultural survey data
+INFO:soil_data_collector:\U0001f33f Calculating NDVI-Soil correlation...
+INFO:ndvi_integration:\U0001f33f Getting NDVI data for 30.3398, 76.3869
+INFO:ndvi_integration:\u2705 Found exact match in NDVI module: Punjab Wheat Farm
+INFO:__main__:\u2705 Soil analysis complete: 0.95 confidence, 0.00s
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 20:25:34] "POST /api/soil/analyze HTTP/1.1" 200 -
+INFO:__main__:\U0001f6f0\ufe0f Soil analysis request: (30.3398, 76.3869) [Source: unknown]
+INFO:soil_data_collector:\U0001f6f0\ufe0f Getting soil data for manual coordinates: 30.3398, 76.3869
+INFO:soil_data_collector:\U0001f3af Found known agricultural location: 30.3398,76.3869
+INFO:soil_data_collector:\u2705 Using verified agricultural survey data
+INFO:soil_data_collector:\U0001f33f Calculating NDVI-Soil correlation...
+INFO:ndvi_integration:\U0001f33f Getting NDVI data for 30.3398, 76.3869
+INFO:ndvi_integration:\u2705 Found exact match in NDVI module: Punjab Wheat Farm
+INFO:__main__:\u2705 Soil analysis complete: 0.95 confidence, 0.00s
+INFO:werkzeug:127.0.0.1 - - [19/Oct/2025 20:26:50] "POST /api/soil/analyze HTTP/1.1" 200 -

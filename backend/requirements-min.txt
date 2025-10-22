@@ -1,0 +1,9 @@
+Flask>=2.2
+flask-cors
+Flask-JWT-Extended
+Flask-SQLAlchemy
+flask-bcrypt
+requests
+python-dotenv
+pytest
+pytest-cov

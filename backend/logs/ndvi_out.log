@@ -1,0 +1,23 @@
+Starting FINAL CORRECTED NDVI Analysis Server...
+============================================================
+API Endpoints:
+  POST /api/ndvi/analyze - Main NDVI analysis
+  GET /api/health - Health check with credential status
+  GET /api/ndvi/test-credentials - Test Copernicus credentials
+  GET /api/ndvi/visualization/<lat>/<lng> - NDVI visualization
+  POST /api/ndvi/time-series - Simulated NDVI time series
+  GET /api/ndvi/debug - Debug information
+Key Features:
+  - Your actual Copernicus credentials configured
+  - Known NDVI values for test locations
+  - Real satellite data integration
+  - Intelligent fallback system
+  - Comprehensive error handling
+Test Locations (will return exact NDVI values):
+  Punjab Wheat: 30.3398, 76.3869 -> NDVI: 0.652
+  Maharashtra Sugarcane: 18.1500, 74.5777 -> NDVI: 0.718
+  California Vineyard: 36.7783, -119.4179 -> NDVI: 0.547
+============================================================
+Server starting on http://127.0.0.1:5001
+ * Serving Flask app 'ndvi_flask_backend'
+ * Debug mode: on

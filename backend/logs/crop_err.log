@@ -1,0 +1,81 @@
+2025-10-19 19:07:01,480 - __main__ - ERROR - Crop database not found at data/crop_params_india.json
+2025-10-19 19:07:01,482 - __main__ - WARNING - Please add crop_params_india.json to data/ directory
+2025-10-19 19:07:01,484 - __main__ - ERROR - Failed to initialize Crop Recommender: [Errno 2] No such file or directory: 'data/crop_params_india.json'
+2025-10-19 19:07:01,488 - __main__ - INFO - ================================================================================
+2025-10-19 19:07:01,489 - __main__ - INFO - \U0001f33e CROP RECOMMENDATION API STARTING
+2025-10-19 19:07:01,492 - __main__ - INFO - ================================================================================
+2025-10-19 19:07:01,493 - __main__ - INFO - 
+2025-10-19 19:07:01,494 - __main__ - INFO - \U0001f4e1 Integration URLs:
+2025-10-19 19:07:01,494 - __main__ - INFO -    • Soil API:    http://localhost:5002
+2025-10-19 19:07:01,494 - __main__ - INFO -    • Weather API: http://localhost:5003
+2025-10-19 19:07:01,495 - __main__ - INFO -    • NDVI API:    http://localhost:5001
+2025-10-19 19:07:01,495 - __main__ - INFO - 
+2025-10-19 19:07:01,495 - __main__ - INFO - \U0001f310 Endpoints:
+2025-10-19 19:07:01,496 - __main__ - INFO -    • Health:      GET  /api/health
+2025-10-19 19:07:01,496 - __main__ - INFO -    • Recommend:   POST /api/crop/recommend
+2025-10-19 19:07:01,498 - __main__ - INFO -    • Integrated:  POST /api/crop/recommend/integrated
+2025-10-19 19:07:01,498 - __main__ - INFO -    • List Crops:  GET  /api/crop/list
+2025-10-19 19:07:01,498 - __main__ - INFO - 
+2025-10-19 19:07:01,498 - __main__ - INFO - ================================================================================
+2025-10-19 19:07:01,499 - __main__ - INFO - 
+2025-10-19 19:07:01,550 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5004
+ * Running on http://192.168.1.10:5004
+2025-10-19 19:07:01,550 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-10-19 19:07:01,566 - werkzeug - INFO -  * Restarting with watchdog (windowsapi)
+2025-10-19 19:07:02,731 - __main__ - ERROR - Crop database not found at data/crop_params_india.json
+2025-10-19 19:07:02,733 - __main__ - WARNING - Please add crop_params_india.json to data/ directory
+2025-10-19 19:07:02,733 - __main__ - ERROR - Failed to initialize Crop Recommender: [Errno 2] No such file or directory: 'data/crop_params_india.json'
+2025-10-19 19:07:02,738 - __main__ - INFO - ================================================================================
+2025-10-19 19:07:02,738 - __main__ - INFO - \U0001f33e CROP RECOMMENDATION API STARTING
+2025-10-19 19:07:02,739 - __main__ - INFO - ================================================================================
+2025-10-19 19:07:02,739 - __main__ - INFO - 
+2025-10-19 19:07:02,739 - __main__ - INFO - \U0001f4e1 Integration URLs:
+2025-10-19 19:07:02,740 - __main__ - INFO -    • Soil API:    http://localhost:5002
+2025-10-19 19:07:02,740 - __main__ - INFO -    • Weather API: http://localhost:5003
+2025-10-19 19:07:02,742 - __main__ - INFO -    • NDVI API:    http://localhost:5001
+2025-10-19 19:07:02,742 - __main__ - INFO - 
+2025-10-19 19:07:02,743 - __main__ - INFO - \U0001f310 Endpoints:
+2025-10-19 19:07:02,743 - __main__ - INFO -    • Health:      GET  /api/health
+2025-10-19 19:07:02,743 - __main__ - INFO -    • Recommend:   POST /api/crop/recommend
+2025-10-19 19:07:02,744 - __main__ - INFO -    • Integrated:  POST /api/crop/recommend/integrated
+2025-10-19 19:07:02,744 - __main__ - INFO -    • List Crops:  GET  /api/crop/list
+2025-10-19 19:07:02,744 - __main__ - INFO - 
+2025-10-19 19:07:02,745 - __main__ - INFO - ================================================================================
+2025-10-19 19:07:02,745 - __main__ - INFO - 
+2025-10-19 19:07:02,778 - werkzeug - WARNING -  * Debugger is active!
+2025-10-19 19:07:02,788 - werkzeug - INFO -  * Debugger PIN: 211-845-863
+2025-10-19 19:07:11,487 - werkzeug - INFO - 127.0.0.1 - - [19/Oct/2025 19:07:11] "[35m[1mGET /api/crop/list HTTP/1.1[0m" 503 -
+2025-10-19 19:07:13,676 - werkzeug - INFO - 127.0.0.1 - - [19/Oct/2025 19:07:13] "[35m[1mPOST /api/crop/recommend HTTP/1.1[0m" 503 -
+2025-10-19 19:07:31,185 - werkzeug - INFO - 127.0.0.1 - - [19/Oct/2025 19:07:31] "GET /api/health HTTP/1.1" 200 -
+2025-10-19 19:13:00,145 - werkzeug - INFO -  * Detected change in 'C:\\Users\\akshi\\anaconda3\\envs\\cropeye\\Lib\\site-packages\\flask\\helpers.py', reloading
+2025-10-19 19:13:00,275 - werkzeug - INFO -  * Detected change in 'C:\\Users\\akshi\\anaconda3\\envs\\cropeye\\Lib\\tempfile.py', reloading
+2025-10-19 19:13:01,036 - werkzeug - INFO -  * Restarting with watchdog (windowsapi)
+2025-10-19 19:13:02,821 - __main__ - ERROR - Crop database not found at data/crop_params_india.json
+2025-10-19 19:13:02,823 - __main__ - WARNING - Please add crop_params_india.json to data/ directory
+2025-10-19 19:13:02,823 - __main__ - ERROR - Failed to initialize Crop Recommender: [Errno 2] No such file or directory: 'data/crop_params_india.json'
+2025-10-19 19:13:02,825 - __main__ - INFO - ================================================================================
+2025-10-19 19:13:02,825 - __main__ - INFO - \U0001f33e CROP RECOMMENDATION API STARTING
+2025-10-19 19:13:02,825 - __main__ - INFO - ================================================================================
+2025-10-19 19:13:02,825 - __main__ - INFO - 
+2025-10-19 19:13:02,825 - __main__ - INFO - \U0001f4e1 Integration URLs:
+2025-10-19 19:13:02,827 - __main__ - INFO -    • Soil API:    http://localhost:5002
+2025-10-19 19:13:02,827 - __main__ - INFO -    • Weather API: http://localhost:5003
+2025-10-19 19:13:02,827 - __main__ - INFO -    • NDVI API:    http://localhost:5001
+2025-10-19 19:13:02,829 - __main__ - INFO - 
+2025-10-19 19:13:02,829 - __main__ - INFO - \U0001f310 Endpoints:
+2025-10-19 19:13:02,829 - __main__ - INFO -    • Health:      GET  /api/health
+2025-10-19 19:13:02,829 - __main__ - INFO -    • Recommend:   POST /api/crop/recommend
+2025-10-19 19:13:02,829 - __main__ - INFO -    • Integrated:  POST /api/crop/recommend/integrated
+2025-10-19 19:13:02,830 - __main__ - INFO -    • List Crops:  GET  /api/crop/list
+2025-10-19 19:13:02,830 - __main__ - INFO - 
+2025-10-19 19:13:02,832 - __main__ - INFO - ================================================================================
+2025-10-19 19:13:02,832 - __main__ - INFO - 
+2025-10-19 19:13:02,870 - werkzeug - WARNING -  * Debugger is active!
+2025-10-19 19:13:02,875 - werkzeug - INFO -  * Debugger PIN: 211-845-863
+2025-10-19 19:19:26,012 - werkzeug - INFO - 127.0.0.1 - - [19/Oct/2025 19:19:26] "GET /api/health HTTP/1.1" 200 -
+2025-10-19 19:23:07,062 - werkzeug - INFO - 127.0.0.1 - - [19/Oct/2025 19:23:07] "GET /api/health HTTP/1.1" 200 -
+2025-10-19 19:23:25,398 - werkzeug - INFO - 127.0.0.1 - - [19/Oct/2025 19:23:25] "[35m[1mGET /api/crop/list HTTP/1.1[0m" 503 -
+2025-10-19 19:23:27,453 - werkzeug - INFO - 127.0.0.1 - - [19/Oct/2025 19:23:27] "[35m[1mPOST /api/crop/recommend HTTP/1.1[0m" 503 -
+2025-10-19 19:23:28,604 - werkzeug - INFO - 127.0.0.1 - - [19/Oct/2025 19:23:28] "GET /api/health HTTP/1.1" 200 -

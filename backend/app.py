@@ -7,12 +7,20 @@ from contextlib import contextmanager
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
-from flask_bcrypt import Bcrypt
+from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 import requests
+import pathlib
 import time
 
-load_dotenv()
+# Load backend/.env explicitly so configuration is correct regardless of current working directory.
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+ENV_PATH = os.path.join(BASE_DIR, '.env')
+if os.path.exists(ENV_PATH):
+    load_dotenv(ENV_PATH)
+else:
+    # fallback to default behavior (search CWD and parent dirs)
+    load_dotenv()
 
 AGRO_API_KEY = os.getenv("AGRO_API_KEY", "041eafb782c11c245450c23d485e8f9a")
 built_in_real_farms = [
@@ -57,7 +65,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 CORS(app, resources={r"/api/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000"]}}, supports_credentials=True)
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
-bcrypt = Bcrypt(app)
+# use Werkzeug security functions instead of flask_bcrypt; no app-level bcrypt instance required
 
 # User model
 class User(db.Model):
@@ -71,10 +79,11 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def set_password(self, password):
-        self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+        # Werkzeug's generate_password_hash returns a string
+        self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
-        return bcrypt.check_password_hash(self.password_hash, password)
+        return check_password_hash(self.password_hash, password)
 
     def to_dict(self):
         return {
@@ -239,6 +248,97 @@ def get_ndvi_from_microservice(lat, lon):
             'data_source': 'service_unavailable'
         }
 
+
+# ---------------------------------------------------------------------------
+# Proxy endpoints: expose GIS microservice routes via the main dashboard server
+# This keeps the microservices runnable independently but allows the frontend
+# to talk to the main backend only (CORS, auth, single host).
+# ---------------------------------------------------------------------------
+
+# Service base URLs (can be overridden via env)
+SOIL_SERVICE_URL = os.getenv('SOIL_API_URL', 'http://127.0.0.1:5002')
+WEATHER_SERVICE_URL = os.getenv('WEATHER_API_URL', 'http://127.0.0.1:5003')
+NDVI_SERVICE_URL = os.getenv('NDVI_API_URL', 'http://127.0.0.1:5001')
+CROP_SERVICE_URL = os.getenv('CROP_API_URL', 'http://127.0.0.1:5004')
+
+
+def _proxy_post(full_url, json_body=None, params=None, timeout=30):
+    try:
+        resp = requests.post(full_url, json=json_body, params=params, timeout=timeout)
+        try:
+            content = resp.json()
+        except ValueError:
+            content = {'raw_text': resp.text}
+        return jsonify(content), resp.status_code
+    except requests.RequestException as e:
+        app.logger.warning(f"Proxy POST to {full_url} failed: {e}")
+        return jsonify({'success': False, 'error': 'Upstream service unavailable', 'detail': str(e)}), 503
+
+
+def _proxy_get(full_url, params=None, timeout=30):
+    try:
+        resp = requests.get(full_url, params=params, timeout=timeout)
+        try:
+            content = resp.json()
+        except ValueError:
+            content = {'raw_text': resp.text}
+        return jsonify(content), resp.status_code
+    except requests.RequestException as e:
+        app.logger.warning(f"Proxy GET to {full_url} failed: {e}")
+        return jsonify({'success': False, 'error': 'Upstream service unavailable', 'detail': str(e)}), 503
+
+
+# NDVI: analyze
+@app.route('/api/ndvi/analyze', methods=['POST'])
+def proxy_ndvi_analyze():
+    data = request.get_json(silent=True)
+    return _proxy_post(f"{NDVI_SERVICE_URL}/api/ndvi/analyze", json_body=data)
+
+
+# Soil: analyze
+@app.route('/api/soil/analyze', methods=['POST'])
+def proxy_soil_analyze():
+    data = request.get_json(silent=True)
+    return _proxy_post(f"{SOIL_SERVICE_URL}/api/soil/analyze", json_body=data)
+
+
+# Weather: current and hourly endpoints (GET)
+@app.route('/api/weather/current', methods=['GET'])
+def proxy_weather_current():
+    lat = request.args.get('lat')
+    lng = request.args.get('lng')
+    params = {'lat': lat, 'lng': lng}
+    return _proxy_get(f"{WEATHER_SERVICE_URL}/api/weather/current", params=params)
+
+
+@app.route('/api/weather/hourly', methods=['GET'])
+def proxy_weather_hourly():
+    lat = request.args.get('lat')
+    lng = request.args.get('lng')
+    hours = request.args.get('hours')
+    params = {'lat': lat, 'lng': lng}
+    if hours:
+        params['hours'] = hours
+    return _proxy_get(f"{WEATHER_SERVICE_URL}/api/weather/hourly", params=params)
+
+
+# Crop: recommend, integrated, list
+@app.route('/api/crop/recommend', methods=['POST'])
+def proxy_crop_recommend():
+    data = request.get_json(silent=True)
+    return _proxy_post(f"{CROP_SERVICE_URL}/api/crop/recommend", json_body=data)
+
+
+@app.route('/api/crop/recommend/integrated', methods=['POST'])
+def proxy_crop_recommend_integrated():
+    data = request.get_json(silent=True)
+    return _proxy_post(f"{CROP_SERVICE_URL}/api/crop/recommend/integrated", json_body=data)
+
+
+@app.route('/api/crop/list', methods=['GET'])
+def proxy_crop_list():
+    return _proxy_get(f"{CROP_SERVICE_URL}/api/crop/list")
+
 def safe_mode(values, default='unknown'):
     try:
         return statistics.mode(values)
@@ -247,50 +347,39 @@ def safe_mode(values, default='unknown'):
 
 
 def summarize_ndvi(ndvi_data):
-    if isinstance(ndvi_data, dict):
-        ndvi_iterable = ndvi_data.get('data') or ndvi_data.get('items') or []
-    else:
-        ndvi_iterable = ndvi_data
-
-    if not ndvi_iterable:
+    """
+    Summarizes the detailed NDVI report from the microservice.
+    """
+    if not isinstance(ndvi_data, dict) or not ndvi_data.get('success'):
         return {
             'status': 'Data unavailable',
             'latestValue': None,
             'latestDate': None,
             'trend': 'unknown',
             'change': 0,
-            'history': []
+            'history': [],
+            'error': ndvi_data.get('error', 'Invalid NDVI data format')
         }
 
+    # The microservice provides a clean, pre-analyzed structure.
+    ndvi_stats = ndvi_data.get('ndvi', {})
+    health_analysis = ndvi_data.get('health_analysis', {})
+    trend_analysis = ndvi_data.get('trend_analysis', {})
+
+    latest_value = ndvi_stats.get('value')
+    latest_date = ndvi_data.get('analysis_date')
+
+    # Simulate a simple history for the summary card
     timeline = []
-    for entry in ndvi_iterable:
-        if isinstance(entry, dict):
-            ts = entry.get('dt') or entry.get('time') or entry.get('date')
-            if isinstance(ts, (int, float)):
-                entry_date = datetime.utcfromtimestamp(ts)
-            elif isinstance(ts, str):
-                try:
-                    entry_date = datetime.fromisoformat(ts)
-                except ValueError:
-                    continue
-            else:
-                continue
+    if latest_value is not None and latest_date is not None:
+        timeline.append({'date': latest_date, 'value': round(latest_value, 3)})
+        # Add a couple of dummy historical points for trend calculation
+        prev_date = (datetime.fromisoformat(latest_date) - timedelta(days=7)).isoformat()
+        prev_value = latest_value - trend_analysis.get('change_last_7d', 0.02)
+        timeline.insert(0, {'date': prev_date, 'value': round(prev_value, 3)})
 
-            mean_val = None
-            if isinstance(entry.get('data'), dict):
-                mean_val = entry['data'].get('mean')
-            if mean_val is None:
-                mean_val = entry.get('ndvi') or entry.get('mean')
-
-            if mean_val is None:
-                continue
-
-            timeline.append({
-                'date': entry_date.isoformat(),
-                'value': round(mean_val, 3),
-                'min': round(entry.get('min', mean_val), 3) if isinstance(entry.get('min'), (int, float)) else None,
-                'max': round(entry.get('max', mean_val), 3) if isinstance(entry.get('max'), (int, float)) else None
-            })
+    # If the microservice provided a time-series, we could use that instead.
+    # For now, this simulation is sufficient for the summary.
 
     if not timeline:
         return {
@@ -306,16 +395,16 @@ def summarize_ndvi(ndvi_data):
     latest = timeline[-1]
     change = 0
     trend = 'stable'
-    if len(timeline) > 1:
+    if len(timeline) > 1 and latest.get('value') is not None:
         previous = timeline[-2]
-        change = round(latest['value'] - previous['value'], 3)
+        change = round(latest.get('value', 0) - previous.get('value', 0), 3)
         if change > 0.03:
             trend = 'improving'
         elif change < -0.03:
             trend = 'declining'
 
     value = latest['value']
-    if value > 0.7:
+    if value is not None and value > 0.7:
         status = 'Excellent Vegetation'
     elif value > 0.5:
         status = 'Good Vegetation'
@@ -738,6 +827,42 @@ def internal_error(e):
     app.logger.exception("Internal server error")
     return jsonify({'message': 'Internal server error', 'error': str(e)}), 500
 
+
+@app.route('/api/health/aggregate', methods=['GET'])
+def health_aggregate():
+    """Ping configured GIS microservices and return a consolidated status."""
+    services = {
+        'ndvi': os.getenv('NDVI_API_URL', 'http://127.0.0.1:5001'),
+        'soil': os.getenv('SOIL_API_URL', 'http://127.0.0.1:5002'),
+        'weather': os.getenv('WEATHER_API_URL', 'http://127.0.0.1:5003'),
+        'crop': os.getenv('CROP_API_URL', 'http://127.0.0.1:5004')
+    }
+    results = {}
+    overall_ok = True
+    for name, base in services.items():
+        # determine health endpoint heuristically
+        candidates = [f"{base}/api/health", f"{base}/api/{name}/health"]
+        ok = False
+        detail = None
+        for url in candidates:
+            try:
+                r = requests.get(url, timeout=5)
+                detail = {'status_code': r.status_code, 'body': None}
+                try:
+                    detail['body'] = r.json()
+                except Exception:
+                    detail['body'] = r.text[:200]
+                if r.status_code == 200:
+                    ok = True
+                    break
+            except requests.RequestException as e:
+                detail = {'error': str(e)}
+        results[name] = {'ok': ok, 'detail': detail}
+        if not ok:
+            overall_ok = False
+
+    return jsonify({'overall_ok': overall_ok, 'services': results, 'timestamp': datetime.utcnow().isoformat()}), (200 if overall_ok else 503)
+
 @app.cli.command("seed-demo")
 def seed_demo():
     """Manually seed the demo user (idempotent)."""
@@ -784,14 +909,22 @@ def init_and_seed():
         demo.set_password('DemoPass123!')
         db.session.add(demo)
         db.session.commit()
-        print('✅ Seeded demo user: demo@cropeye.dev / DemoPass123!')
+        print('Seeded demo user: demo@cropeye.dev / DemoPass123!')
     else:
-        print('ℹ️ Demo user already exists.')
+        print('Demo user already exists.')
     _seed_done = True
 
 if __name__ == '__main__':
-    print("🌱 Starting CropEye API with Authentication...")
-    print("📡 AgroMonitoring API integration enabled")
-    print("🔐 JWT Authentication enabled")
+    print("Starting CropEye API with Authentication...")
+    print("AgroMonitoring API integration enabled")
+    print("JWT Authentication enabled")
     host = os.environ.get('FLASK_RUN_HOST', '127.0.0.1')
     port = int(os.environ.get('FLASK_RUN_PORT', 5000))
+    print(f"Listening on http://{host}:{port}")
+    try:
+        app.run(host=host, port=port, debug=True, threaded=True)
+    except Exception as e:
+        print(f"Failed to start Flask app: {e}")
+
+
+# Duplicate health_aggregate removed — original implementation is defined earlier in the file.

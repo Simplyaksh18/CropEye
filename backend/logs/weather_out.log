@@ -1,0 +1,126 @@
+================================================================================
+WEATHER ANALYSIS BACKEND
+================================================================================
+
+API Endpoints (use query params for GET requests):
+   GET    /api/weather/health
+   GET    /api/weather/current?lat=...&lng=...
+   GET    /api/weather/hourly?lat=...&lng=...
+   POST   /api/weather/historical (with JSON body)
+   GET    /api/weather/agricultural?lat=...&lng=...
+   GET    /api/weather/alerts?lat=...&lng=...
+   GET    /api/weather/integrated?lat=...&lng=...
+   GET    /api/weather/debug
+
+Features:
+   - Real-time weather (OpenWeatherMap)
+   - Historical data (Copernicus ERA5)
+   - Agricultural indices (GDD, ET, Frost, Heat)
+   - Weather-Soil integration
+   - Weather-NDVI integration
+
+Integration:
+   - Soil API: http://127.0.0.1:5002
+   - NDVI API: http://127.0.0.1:5001
+================================================================================
+
+Server starting on http://0.0.0.0:5003
+Weather collector: Ready
+
+================================================================================
+
+ * Serving Flask app 'weather_flask_backend'
+ * Debug mode: on
+================================================================================
+WEATHER ANALYSIS BACKEND
+================================================================================
+
+API Endpoints (use query params for GET requests):
+   GET    /api/weather/health
+   GET    /api/weather/current?lat=...&lng=...
+   GET    /api/weather/hourly?lat=...&lng=...
+   POST   /api/weather/historical (with JSON body)
+   GET    /api/weather/agricultural?lat=...&lng=...
+   GET    /api/weather/alerts?lat=...&lng=...
+   GET    /api/weather/integrated?lat=...&lng=...
+   GET    /api/weather/debug
+
+Features:
+   - Real-time weather (OpenWeatherMap)
+   - Historical data (Copernicus ERA5)
+   - Agricultural indices (GDD, ET, Frost, Heat)
+   - Weather-Soil integration
+   - Weather-NDVI integration
+
+Integration:
+   - Soil API: http://127.0.0.1:5002
+   - NDVI API: http://127.0.0.1:5001
+================================================================================
+
+Server starting on http://0.0.0.0:5003
+Weather collector: Ready
+
+================================================================================
+
+================================================================================
+WEATHER ANALYSIS BACKEND
+================================================================================
+
+API Endpoints (use query params for GET requests):
+   GET    /api/weather/health
+   GET    /api/weather/current?lat=...&lng=...
+   GET    /api/weather/hourly?lat=...&lng=...
+   POST   /api/weather/historical (with JSON body)
+   GET    /api/weather/agricultural?lat=...&lng=...
+   GET    /api/weather/alerts?lat=...&lng=...
+   GET    /api/weather/integrated?lat=...&lng=...
+   GET    /api/weather/debug
+
+Features:
+   - Real-time weather (OpenWeatherMap)
+   - Historical data (Copernicus ERA5)
+   - Agricultural indices (GDD, ET, Frost, Heat)
+   - Weather-Soil integration
+   - Weather-NDVI integration
+
+Integration:
+   - Soil API: http://127.0.0.1:5002
+   - NDVI API: http://127.0.0.1:5001
+================================================================================
+
+Server starting on http://0.0.0.0:5003
+Weather collector: Ready
+
+================================================================================
+
+================================================================================
+WEATHER ANALYSIS BACKEND
+================================================================================
+
+API Endpoints (use query params for GET requests):
+   GET    /api/weather/health
+   GET    /api/weather/current?lat=...&lng=...
+   GET    /api/weather/hourly?lat=...&lng=...
+   POST   /api/weather/historical (with JSON body)
+   GET    /api/weather/agricultural?lat=...&lng=...
+   GET    /api/weather/alerts?lat=...&lng=...
+   GET    /api/weather/integrated?lat=...&lng=...
+   GET    /api/weather/debug
+
+Features:
+   - Real-time weather (OpenWeatherMap)
+   - Historical data (Copernicus ERA5)
+   - Agricultural indices (GDD, ET, Frost, Heat)
+   - Weather-Soil integration
+   - Weather-NDVI integration
+
+Integration:
+   - Soil API: http://127.0.0.1:5002
+   - NDVI API: http://127.0.0.1:5001
+================================================================================
+
+Server starting on http://0.0.0.0:5003
+Weather collector: Ready
+
+================================================================================
+
