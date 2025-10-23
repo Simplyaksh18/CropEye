@@ -1,33 +1,3 @@
-import React, { useEffect, useState } from "react";
-
-interface Props {
-  items: string[];
-  interval?: number;
-  className?: string;
-}
-
-export const RotatingText: React.FC<Props> = ({
-  items,
-  interval = 2500,
-  className = "",
-}) => {
-  const [idx, setIdx] = useState(0);
-
-  useEffect(() => {
-    const t = setInterval(
-      () => setIdx((i) => (i + 1) % items.length),
-      interval
-    );
-    return () => clearInterval(t);
-  }, [items.length, interval]);
-
-  return <span className={className}>{items[idx]}</span>;
-};
-
-export default RotatingText;
-// src/components/ui/RotatingText.tsx
-// Cyclically displays the five main GIS modules
-
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../../utils/cn";
@@ -46,12 +16,15 @@ export const RotatingText: React.FC<RotatingTextProps> = ({
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
+    if (!items || items.length === 0) return;
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % items.length);
     }, interval);
 
     return () => clearInterval(timer);
-  }, [items.length, interval]);
+  }, [items, interval]);
+
+  if (!items || items.length === 0) return null;
 
   return (
     <div className={cn("relative h-12 overflow-hidden", className)}>
@@ -73,14 +46,4 @@ export const RotatingText: React.FC<RotatingTextProps> = ({
   );
 };
 
-// Usage Example:
-// <RotatingText
-//   items={[
-//     'Pest & Disease Management',
-//     'Water Management',
-//     'Weather Forecast',
-//     'Crop Recommendations',
-//     'Soil Analysis',
-//   ]}
-//   interval={3000}
-// />
+export default RotatingText;

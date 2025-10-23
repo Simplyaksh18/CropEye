@@ -17,12 +17,14 @@ import {
   LogOut,
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
+import { AnimatedThemeToggler } from "../UI/AnimatedThemeToggler";
 import { useAuth } from "../../context/AuthContext";
 import LocationInput from "../LocationInput/LocationInput";
 import { useLocation as useAnalysisLocation } from "../../context/LocationContext";
 import Footer from "./Footer";
 import "./MainLayout.css";
 import "../Pages/Pages.css";
+import StaggeredMenu from "./StaggeredMenu";
 
 const navItems = [
   { path: "overview", label: "Overview", icon: <Sprout /> },
@@ -72,17 +74,7 @@ const MainLayout = () => {
             <strong>{welcomeTitle}</strong>
             {loading && <span className="loading-chip">Analyzing...</span>}
           </div>
-          <button
-            className="theme-toggle"
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-          >
-            {theme === "light" ? (
-              <MoonStar size={20} />
-            ) : (
-              <SunMedium size={20} />
-            )}
-          </button>
+          <AnimatedThemeToggler />
           <button
             className="logout-button"
             onClick={logout}
@@ -109,6 +101,7 @@ const MainLayout = () => {
       </nav>
 
       <div className="layout-columns">
+        {user && <StaggeredMenu isFixed={false} items={[]} socialItems={[]} />}
         <aside className="layout-sidebar">
           <LocationInput />
           {analysisData && (

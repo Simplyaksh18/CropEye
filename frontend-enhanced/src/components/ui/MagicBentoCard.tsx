@@ -53,6 +53,8 @@ export const MagicBentoCard: React.FC<Props> = ({
       onClick={onClick}
       className={clsx(
         "relative rounded-2xl p-6 bg-gradient-to-br from-white/5 to-white/3 border border-white/10 shadow-xl overflow-hidden",
+        // dark mode subtle color tweak
+        "dark:from-black/30 dark:to-black/20 dark:border-black/25",
         className
       )}
       style={
@@ -65,9 +67,11 @@ export const MagicBentoCard: React.FC<Props> = ({
       {/* spotlight layer */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(closest-side,rgba(255,255,255,0.08),transparent)] opacity-60"
+        className="pointer-events-none absolute inset-0 opacity-60"
         style={
           {
+            background:
+              "radial-gradient(closest-side, rgba(255,255,255,0.08), transparent)",
             maskImage:
               "radial-gradient(circle at var(--spot-x,50%) var(--spot-y,50%), rgba(0,0,0,1), rgba(0,0,0,0))",
           } as React.CSSProperties

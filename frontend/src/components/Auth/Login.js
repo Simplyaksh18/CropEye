@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import "./Auth.css";
+import MagicBento from "../UI/MagicBento";
+import Footer from "../Layout/Footer";
 
 const SHOWCASE_CHIPS = [
   "Auto NDVI refresh",
@@ -137,6 +139,7 @@ const Login = () => {
                 minutes.
               </p>
             </div>
+            <Footer />
 
             <div className="showcase-chips">
               {SHOWCASE_CHIPS.map((chip) => (
@@ -204,82 +207,84 @@ const Login = () => {
           </div>
         </aside>
 
-        <div className="auth-card">
-          <h2 className="auth-title">Sign in to CropEye</h2>
-          <p className="auth-subtitle">
-            Access the live agronomic mission control
-          </p>
+        <MagicBento className="auth-card">
+          <div className="auth-card">
+            <h2 className="auth-title">Sign in to CropEye</h2>
+            <p className="auth-subtitle">
+              Access the live agronomic mission control
+            </p>
 
-          <form onSubmit={handleSubmit} className="auth-form">
-            {error && <div className="error-message">{error}</div>}
+            <form onSubmit={handleSubmit} className="auth-form">
+              {error && <div className="error-message">{error}</div>}
 
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="you@farm.co"
-                required
-              />
-            </div>
+              <div className="form-group">
+                <label htmlFor="email">Email</label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="you@farm.co"
+                  required
+                />
+              </div>
 
-            <div className="form-group password-group">
-              <label htmlFor="password">Password</label>
-              <input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Enter your password"
-                required
-              />
-              <button
-                type="button"
-                className="visibility-toggle"
-                onClick={togglePasswordVisibility}
-              >
-                {showPassword ? "Hide" : "Show"}
+              <div className="form-group password-group">
+                <label htmlFor="password">Password</label>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Enter your password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="visibility-toggle"
+                  onClick={togglePasswordVisibility}
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
+
+              <div className="form-meta">
+                <span>Secure by JWT & bcrypt hashing</span>
+                <a
+                  href="https://cropeye.dev/docs"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  View docs
+                </a>
+              </div>
+
+              <button type="submit" className="auth-button" disabled={loading}>
+                {loading ? "Signing in..." : "Sign In"}
               </button>
-            </div>
+            </form>
 
-            <div className="form-meta">
-              <span>Secure by JWT & bcrypt hashing</span>
-              <a
-                href="https://cropeye.dev/docs"
-                target="_blank"
-                rel="noreferrer"
-              >
-                View docs
-              </a>
-            </div>
+            <p className="auth-link">
+              Don't have an account?{" "}
+              <Link to="/register">Create one in seconds</Link>
+            </p>
 
-            <button type="submit" className="auth-button" disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"}
-            </button>
-          </form>
-
-          <p className="auth-link">
-            Don't have an account?{" "}
-            <Link to="/register">Create one in seconds</Link>
-          </p>
-
-          <div className="auth-divider">or explore instantly</div>
-          <div className="demo-credentials">
-            <h4>Demo mission control</h4>
-            <div className="demo-row">
-              <span className="demo-label">Email</span>
-              <span className="demo-value">demo@cropeye.dev</span>
-            </div>
-            <div className="demo-row">
-              <span className="demo-label">Password</span>
-              <span className="demo-value">DemoPass123!</span>
+            <div className="auth-divider">or explore instantly</div>
+            <div className="demo-credentials">
+              <h4>Demo mission control</h4>
+              <div className="demo-row">
+                <span className="demo-label">Email</span>
+                <span className="demo-value">demo@cropeye.dev</span>
+              </div>
+              <div className="demo-row">
+                <span className="demo-label">Password</span>
+                <span className="demo-value">DemoPass123!</span>
+              </div>
             </div>
           </div>
-        </div>
+        </MagicBento>
       </div>
     </div>
   );

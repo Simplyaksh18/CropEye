@@ -1,44 +1,4 @@
 import React, { useState } from "react";
-import clsx from "clsx";
-import { useTheme } from "../../context/ThemeContext";
-
-export const StaggeredMenu: React.FC = () => {
-  const [open, setOpen] = useState(false);
-  const { theme } = useTheme();
-
-  const btnColor = theme === "light" ? "rgb(41, 255, 44)" : "rgb(46, 185, 255)";
-
-  return (
-    <div className="relative inline-block">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className={clsx("p-2 rounded-md shadow-md")}
-        style={{ background: btnColor }}
-      >
-        ☰
-      </button>
-
-      {open && (
-        <div className="absolute right-0 mt-2 w-48 bg-white/5 backdrop-blur rounded-lg p-2 shadow-lg animate-fade-in">
-          <ul className="space-y-1">
-            <li className="px-3 py-2 hover:bg-white/10 rounded">Profile</li>
-            <li className="px-3 py-2 hover:bg-white/10 rounded">Settings</li>
-            <li className="px-3 py-2 hover:bg-white/10 rounded">Logout</li>
-          </ul>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default StaggeredMenu;
-// src/components/ui/StaggeredMenu.tsx
-// Animated menu with theme-aware colors
-// Light Mode Button: rgb(41, 255, 44)
-// Dark Mode Button: rgb(46, 185, 255)
-
-import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { cn } from "../../utils/cn";
@@ -164,3 +124,5 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
     </div>
   );
 };
+
+export default StaggeredMenu;

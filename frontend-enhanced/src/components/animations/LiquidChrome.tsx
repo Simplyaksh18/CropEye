@@ -12,17 +12,28 @@ const LiquidChromeShader: React.FC<{ interactive?: boolean }> = ({
 }) => {
   const meshRef = useRef<THREE.Mesh>(null);
 
-  // Shader material with exact parameters
+  // detect theme (guard SSR)
+  const isDark =
+    typeof document !== "undefined" &&
+    document.documentElement.classList.contains("dark");
+
+  // Shader material with theme-aware parameters
   const uniforms = useMemo(
     () => ({
       u_time: { value: 0 },
-      u_colorMix: { value: new THREE.Vector3(0.0, 0.3, 0.1) }, // Red 0, Green 0.3, Blue 0.1
-      u_speed: { value: 0.41 },
-      u_amplitude: { value: 0.3 },
+      // theme-aware color mix: greenish in light, cool blue in dark
+      u_colorMix: {
+        value: isDark
+          ? new THREE.Vector3(0.02, 0.28, 0.55) // subtle blue tint for dark
+          : new THREE.Vector3(0.0, 0.3, 0.1), // green tint for light
+      },
+      // slightly different motion feel per theme
+      u_speed: { value: isDark ? 0.32 : 0.41 },
+      u_amplitude: { value: isDark ? 0.22 : 0.3 },
       // u_interaction will be set from prop below
       u_interaction: { value: interactive ? 1.0 : 0.0 },
     }),
-    [interactive]
+    [interactive, isDark]
   );
 
   const vertexShader = `
@@ -104,17 +115,17 @@ const LiquidChromeShader: React.FC<{ interactive?: boolean }> = ({
 export const LiquidChrome: React.FC<{
   className?: string;
   interactive?: boolean;
-}> = ({
-  className = "",
-  interactive = false,
-}) => {
+}> = ({ className = "", interactive = false }) => {
   // When interactive=true we allow pointer events and enable
   // the shader interaction uniform. Otherwise, the background
   // is strictly decorative and won't block inputs.
   return (
     <div
       className={`fixed inset-0 ${className}`}
-      style={{ zIndex: interactive ? 5 : 0, pointerEvents: interactive ? "auto" : "none" }}
+      style={{
+        zIndex: interactive ? 5 : 0,
+        pointerEvents: interactive ? "auto" : "none",
+      }}
     >
       <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
         <LiquidChromeShader interactive={interactive} />

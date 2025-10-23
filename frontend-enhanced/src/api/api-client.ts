@@ -47,4 +47,63 @@ api.interceptors.response.use(
   }
 );
 
+// Development-friendly logging: print request/response info to console when running in dev
+if (meta.env?.DEV) {
+  api.interceptors.request.use(
+    (config) => {
+      try {
+        const fullUrl = `${config.baseURL ?? ""}${config.url ?? ""}`;
+
+        console.debug(
+          "[API REQUEST]",
+          (config.method || "GET").toUpperCase(),
+          fullUrl,
+          {
+            headers: config.headers,
+            data: config.data,
+          }
+        );
+      } catch {
+        /* ignore */
+      }
+      return config;
+    },
+    (err) => Promise.reject(err)
+  );
+
+  api.interceptors.response.use(
+    (resp) => {
+      try {
+        const cfg = resp.config || {};
+
+        console.debug(
+          "[API RESPONSE]",
+          (cfg.method || "GET").toUpperCase(),
+          `${cfg.baseURL ?? ""}${cfg.url ?? ""}`,
+          resp.status,
+          resp.data
+        );
+      } catch {
+        /* ignore */
+      }
+      return resp;
+    },
+    (err) => {
+      try {
+        const cfg = err.config || {};
+        console.debug(
+          "[API ERROR]",
+          (cfg.method || "?").toUpperCase(),
+          `${cfg.baseURL ?? ""}${cfg.url ?? ""}`,
+          err.response?.status,
+          err.response?.data || err.message
+        );
+      } catch {
+        /* ignore */
+      }
+      return Promise.reject(err);
+    }
+  );
+}
+
 export default api;
