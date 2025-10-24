@@ -11,19 +11,38 @@ __pycache__/
 !/backend/package-lock.json
 !/frontend/package.json
 !/frontend/package-lock.json
+!/frontend-enhanced/package.json
+!/frontend-enhanced/package-lock.json
 
 # Node
 frontend/node_modules/
 frontend/build/
+frontend-enhanced/node_modules/
+frontend-enhanced/build/
 
 # SQLite Database
 backend/cropeye.db
+instance/
+backend/instance/
+
+# Logs
+backend/logs/
+*.log
 
 # Test output
 coverage.xml
 .coverage
 
 # Generated GIS data
+sentinel_data/
+backend/sentinel_data/
 GIS/NDVI/sentinel_data/
 GIS/Soil/sentinel_data/
+backend/GIS/NDVI/outputs/
+backend/GIS/Weather/outputs/
+backend/archive/
+data/
+
+# Cypress
+cypress/downloads/
 
