@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import logging
 import os
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +72,75 @@ class NDVICalculator:
         except Exception as e:
             logger.error(f"NDVI calculation failed: {e}")
             return None
+
+    def calculate_ndvi(self, latitude, longitude, acquisition_date=None):
+        """
+        Calculate NDVI from geographic coordinates and optional date.
+        Returns simulated or modeled NDVI data.
+        """
+        try:
+            if acquisition_date is None:
+                acquisition_date = None  # Could be used for seasonal variation later
+
+            # For now, fallback to generating synthetic NDVI using realistic model
+            ndvi_array = create_sample_ndvi_data(latitude, longitude)
+            stats = self.calculate_ndvi_statistics(ndvi_array)
+
+            return {
+                'ndvi_array': ndvi_array,
+                'statistics': stats,
+                'bounds': None,
+                'crs': None,
+                'transform': None,
+                'output_path': None,
+                'data_source': 'synthetic_modeled'
+            }
+        except Exception as e:
+            logger.error(f"NDVI calculation failed: {e}")
+            return None
+    def calculate_ndvi_from_bands(self, red_band: float, nir_band: float) -> Optional[float]:
+        """
+        Calculate NDVI from red and nir band values.
+        
+        Args:
+            red_band (float): Red band reflectance value.
+            nir_band (float): Near-Infrared band reflectance value.
+        
+        Returns:
+            Optional[float]: NDVI value calculated as (NIR - Red) / (NIR + Red),
+                             or None if invalid input or division by zero.
+        """
+        try:
+            red = float(red_band)
+            nir = float(nir_band)
+            denom = nir + red
+            if denom == 0:
+                logger.warning("Division by zero in NDVI calculation from bands")
+                return None
+            ndvi = (nir - red) / denom
+            return ndvi
+        except Exception as e:
+            logger.error(f"Error calculating NDVI from bands: {e}")
+            return None
+            return None
+
+    def get_health_category(self, ndvi_value: float) -> str:
+        """Return the vegetation health category for given NDVI value"""
+        try:
+            health_info = self.classify_vegetation_health(ndvi_value)
+            return health_info.get('category', 'Unknown')
+        except Exception as e:
+            logger.error(f"Error getting health category: {e}")
+            return 'Unknown'
+
+    def get_health_score(self, ndvi_value: float) -> int:
+        """Return the vegetation health score for given NDVI value"""
+        try:
+            health_info = self.classify_vegetation_health(ndvi_value)
+            return health_info.get('health_score', 0)
+        except Exception as e:
+            logger.error(f"Error getting health score: {e}")
+            return 0
 
     def _extract_coordinates_from_path(self, file_path):
         """Extract coordinates from file path"""

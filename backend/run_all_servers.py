@@ -59,8 +59,11 @@ def main():
             f"start powershell -NoExit -Command \"& '{sys.executable}' '{config['script']}'\""
         )
         print(f"  -> Starting {name} on port {config['port']} in a new PowerShell window...")
+        # Launch each service with its script directory as working directory so
+        # relative data paths inside the service resolve correctly.
+        service_cwd = os.path.dirname(config['script']) or BASE_DIR
         # Use shell=True so the `start` builtin is executed by cmd.exe
-        proc = subprocess.Popen(ps_command, shell=True, cwd=BASE_DIR)
+        proc = subprocess.Popen(ps_command, shell=True, cwd=service_cwd)
         processes.append(proc)
         time.sleep(1)  # Stagger the launches slightly
 

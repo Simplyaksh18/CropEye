@@ -41,13 +41,14 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)
 
-# Initialize recommender with crop database
-CROP_DATA_PATH = 'data/crop_params_india.json'
+# Initialize recommender with crop database (use path relative to this file)
+CROP_DIR = os.path.dirname(__file__)
+CROP_DATA_PATH = os.path.join(CROP_DIR, 'data', 'crop_params_india.json')
 if not os.path.exists(CROP_DATA_PATH):
     logger.error(f"Crop database not found at {CROP_DATA_PATH}")
-    # Create data directory if needed
-    os.makedirs('data', exist_ok=True)
-    logger.warning("Please add crop_params_india.json to data/ directory")
+    # Create data directory if needed (create under module data path)
+    os.makedirs(os.path.join(CROP_DIR, 'data'), exist_ok=True)
+    logger.warning(f"Please add crop_params_india.json to {os.path.join(CROP_DIR,'data')} directory")
 
 try:
     recommender = CropRecommender(crop_table_path=CROP_DATA_PATH)

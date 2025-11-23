@@ -808,7 +808,7 @@ if __name__ == '__main__':
     print('=' * 80)
     
     # Get port from environment or default to 5002
-    port = int(os.getenv('FLASK_PORT', 5002))
+    port = int(os.getenv('FLASK_PORT', 5000))
     host = os.getenv('FLASK_HOST', '0.0.0.0')
     
     print(f"\nServer starting on http://{host}:{port}")
