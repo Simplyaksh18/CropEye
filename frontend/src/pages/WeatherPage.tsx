@@ -15,7 +15,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useLocation } from "../hooks/useLocation";
-import { api } from "../services/api";
+import { api, API_BASE } from "../services/api";
 import type { WeatherResponse } from "../types";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
@@ -27,7 +27,6 @@ export const WeatherPage: React.FC = () => {
   const { location } = useLocation();
   const [data, setData] = useState<WeatherResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [, setError] = useState("");
 
   const handleLogout = () => {
     logout();
@@ -37,12 +36,11 @@ export const WeatherPage: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       if (!location) {
-        setError("Please set a location first");
+        console.warn("Please set a location first");
         return;
       }
 
       setLoading(true);
-      setError("");
 
       try {
         const result = await api.weather.agricultural(
@@ -50,12 +48,19 @@ export const WeatherPage: React.FC = () => {
           location.lng
         );
         setData(result);
-      } catch (error) {
-        console.error("Weather API error:", error);
-        setError(
-          "Failed to fetch weather data. Please check backend connection."
-        );
-        // Remove mock data fallback - show error instead
+      } catch (err) {
+        console.error("Weather API error:", err);
+        type ErrWithStatus = { status?: number };
+        const e = err as ErrWithStatus;
+        if (e && e.status === 0) {
+          console.warn(
+            `Cannot reach Weather service at ${API_BASE.weather}. Ensure the Weather backend is running.`
+          );
+        } else {
+          console.warn(
+            "Failed to fetch weather data. Please check backend connection."
+          );
+        }
         setData(null);
       } finally {
         setLoading(false);
@@ -64,7 +69,6 @@ export const WeatherPage: React.FC = () => {
 
     fetchData();
   }, [location]);
-
   if (!location) {
     return (
       <div className="min-h-screen bg-linear-to-br from-green-100 to-amber-100 p-6">
@@ -129,32 +133,48 @@ export const WeatherPage: React.FC = () => {
               </div>
             )}
 
-            {/* Agricultural Context */}
-            <div className="bg-white p-6 rounded-lg shadow border">
-              <h2 className="text-xl font-bold mb-4">Agricultural Context</h2>
-              <div className="grid md:grid-cols-3 gap-4">
-                <div>
-                  <p className="text-gray-600 text-sm">
-                    Growing Degree Days (GDD)
-                  </p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {data.agricultural_context.gdd}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-600 text-sm">Frost Risk</p>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {data.agricultural_context.frost_risk}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-600 text-sm">Heat Stress Index</p>
-                  <p className="text-2xl font-bold text-orange-600">
-                    {(data.agricultural_context.heat_stress * 100).toFixed(0)}%
-                  </p>
+            {/* Agricultural Context (defensive) */}
+            {data.agricultural_context ? (
+              <div className="bg-white p-6 rounded-lg shadow border">
+                <h2 className="text-xl font-bold mb-4">Agricultural Context</h2>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-gray-600 text-sm">
+                      Growing Degree Days (GDD)
+                    </p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {typeof data.agricultural_context.gdd === "number" &&
+                      Number.isFinite(data.agricultural_context.gdd)
+                        ? data.agricultural_context.gdd
+                        : "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600 text-sm">Frost Risk</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {data.agricultural_context.frost_risk ?? "Unknown"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600 text-sm">Heat Stress Index</p>
+                    <p className="text-2xl font-bold text-orange-600">
+                      {typeof data.agricultural_context.heat_stress === "number"
+                        ? `${Math.round(
+                            data.agricultural_context.heat_stress * 100
+                          )}%`
+                        : "N/A"}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="bg-white p-6 rounded-lg shadow border">
+                <h2 className="text-xl font-bold mb-4">Agricultural Context</h2>
+                <p className="text-gray-600">
+                  No agricultural context available for this location.
+                </p>
+              </div>
+            )}
 
             {/* Educational Insights - Always visible */}
             <div className="bg-linear-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 shadow-lg">
@@ -232,28 +252,34 @@ export const WeatherPage: React.FC = () => {
               <h2 className="text-xl font-bold mb-4">
                 7-Day Temperature Forecast
               </h2>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={data.forecast_7day}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="temp_max"
-                    stroke="#f97316"
-                    name="Max Temp"
-                    strokeWidth={2}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="temp_min"
-                    stroke="#3b82f6"
-                    name="Min Temp"
-                    strokeWidth={2}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              {data.forecast_7day && data.forecast_7day.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={data.forecast_7day}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line
+                      type="monotone"
+                      dataKey="temp_max"
+                      stroke="#f97316"
+                      name="Max Temp"
+                      strokeWidth={2}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="temp_min"
+                      stroke="#3b82f6"
+                      name="Min Temp"
+                      strokeWidth={2}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-gray-600">
+                  No 7-day temperature forecast available.
+                </p>
+              )}
             </div>
 
             {/* Rainfall Forecast */}
@@ -261,15 +287,21 @@ export const WeatherPage: React.FC = () => {
               <h2 className="text-xl font-bold mb-4">
                 7-Day Rainfall Forecast
               </h2>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={data.forecast_7day}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="rain" fill="#10b981" name="Rainfall (mm)" />
-                </BarChart>
-              </ResponsiveContainer>
+              {data.forecast_7day && data.forecast_7day.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={data.forecast_7day}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="rain" fill="#10b981" name="Rainfall (mm)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-gray-600">
+                  No 7-day rainfall forecast available.
+                </p>
+              )}
             </div>
           </div>
         )}

@@ -233,9 +233,14 @@ def recommend_crops_integrated():
                 timeout=10
             )
             if weather_response.status_code == 200:
-                weather_data = weather_response.json()
-                result['data_sources'].append('weather')
-                logger.info("✅ Weather data retrieved")
+                try:
+                    weather_data = weather_response.json()
+                except Exception:
+                    weather_data = None
+                if weather_data:
+                    result['data_sources'].append('weather')
+                    logger.info("✅ Weather data retrieved")
+                    logger.debug(f"Weather payload snippet: {str(weather_data)[:300]}")
         except requests.RequestException as e:
             logger.warning(f"⚠️ Could not fetch weather data: {e}")
         
@@ -248,13 +253,18 @@ def recommend_crops_integrated():
                 timeout=10
             )
             if ndvi_response.status_code == 200:
-                ndvi_data = ndvi_response.json()
-                result['data_sources'].append('ndvi')
-                logger.info("✅ NDVI data retrieved")
+                try:
+                    ndvi_data = ndvi_response.json()
+                except Exception:
+                    ndvi_data = None
+                if ndvi_data:
+                    result['data_sources'].append('ndvi')
+                    logger.info("✅ NDVI data retrieved")
+                    logger.debug(f"NDVI payload snippet: {str(ndvi_data)[:300]}")
         except requests.RequestException as e:
             logger.warning(f"⚠️ Could not fetch NDVI data: {e}")
         
-        # Extract parameters for recommendation
+        # Extract parameters for recommendation with robust parsing
         input_params = {
             'latitude': lat,
             'longitude': lng,
@@ -263,24 +273,104 @@ def recommend_crops_integrated():
             'temp_mean': 25,  # Default
             'ndvi': 0.5  # Default
         }
-        
+
+        # Helper: robust NDVI extractor (handles several response shapes)
+        def _extract_ndvi(payload):
+            try:
+                if payload is None:
+                    return None
+                # Common wrapper: {'status':..., 'data': {...}}
+                if isinstance(payload, dict) and 'data' in payload:
+                    payload = payload['data']
+
+                if isinstance(payload, dict):
+                    # Case: {'ndvi': 0.5} or {'ndvi': {'value': 0.5}}
+                    if 'ndvi' in payload:
+                        v = payload['ndvi']
+                        if isinstance(v, dict) and 'value' in v:
+                            return float(v['value'])
+                        try:
+                            return float(v)
+                        except Exception:
+                            pass
+                    # Case: payload directly contains 'value' key
+                    if 'value' in payload:
+                        try:
+                            return float(payload['value'])
+                        except Exception:
+                            pass
+                return None
+            except Exception:
+                return None
+
+        # Helper: robust weather extractor
+        def _extract_weather(payload):
+            temp = None
+            rain = None
+            try:
+                if payload is None:
+                    return {'temp': None, 'rain': None}
+                # If wrapper exists
+                if isinstance(payload, dict):
+                    # Direct keys
+                    if 'temperature' in payload and isinstance(payload['temperature'], dict):
+                        temp = payload['temperature'].get('current')
+                    if 'temp' in payload:
+                        try:
+                            temp = float(payload['temp'])
+                        except Exception:
+                            pass
+                    # agricultural_context.et.temperature
+                    ac = payload.get('agricultural_context') or payload.get('agri')
+                    if isinstance(ac, dict):
+                        # some services nest ET data
+                        et = ac.get('et') or ac.get('et_mm')
+                        if isinstance(et, dict) and 'temperature' in et:
+                            temp = et.get('temperature')
+                        # rainfall may be under 'rain' or 'rainfall'
+                        rain = payload.get('rain') or payload.get('rainfall') or ac.get('rain') or ac.get('rainfall')
+                    # top-level rain keys
+                    if rain is None:
+                        rain = payload.get('rain') or payload.get('rainfall') or payload.get('precipitation')
+                return {'temp': (float(temp) if temp is not None else None), 'rain': (float(rain) if rain is not None else None)}
+            except Exception:
+                return {'temp': None, 'rain': None}
+
         # Override with actual data
         if soil_data:
             result['soil_data'] = soil_data
-            if 'soil_properties' in soil_data:
-                input_params['ph'] = soil_data['soil_properties'].get('ph', {}).get('value', 6.5)
-        
+            # Try multiple soil schemas
+            try:
+                # 1) soil_data['soil_properties']['ph']['value']
+                if isinstance(soil_data, dict):
+                    sp = soil_data.get('soil_properties') or soil_data.get('properties') or soil_data
+                    if isinstance(sp, dict):
+                        ph_val = None
+                        if 'ph' in sp and isinstance(sp['ph'], dict):
+                            ph_val = sp['ph'].get('value')
+                        elif 'ph' in sp:
+                            ph_val = sp.get('ph')
+                        if ph_val is not None:
+                            try:
+                                input_params['ph'] = float(ph_val)
+                            except Exception:
+                                pass
+            except Exception:
+                pass
+
         if weather_data:
             result['weather_data'] = weather_data
-            if 'temperature' in weather_data:
-                input_params['temp_mean'] = weather_data['temperature'].get('current', 25)
-            # Use the rain value from the weather data
-            input_params['rainfall'] = weather_data.get('rain', 700)
-        
+            w = _extract_weather(weather_data)
+            if w.get('temp') is not None:
+                input_params['temp_mean'] = w['temp']
+            if w.get('rain') is not None:
+                input_params['rainfall'] = w['rain']
+
         if ndvi_data:
             result['ndvi_data'] = ndvi_data
-            if 'ndvi' in ndvi_data and 'value' in ndvi_data['ndvi']:
-                input_params['ndvi'] = ndvi_data['ndvi']['value']
+            ndv = _extract_ndvi(ndvi_data)
+            if ndv is not None:
+                input_params['ndvi'] = ndv
         
         # Get recommendations
         if recommender:

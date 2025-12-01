@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useLocation } from "../hooks/useLocation";
-import { api } from "../services/api";
+import { api, API_BASE } from "../services/api";
 import type { SoilResponse } from "../types";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
@@ -30,7 +30,18 @@ export const SoilPage: React.FC = () => {
       setData(result);
     } catch (error) {
       console.error("Soil API error:", error);
-      setError("Failed to fetch soil data. Please check backend connection.");
+      const isStatusError = (obj: unknown): obj is { status: number } =>
+        typeof obj === "object" &&
+        obj !== null &&
+        "status" in obj &&
+        typeof (obj as Record<string, unknown>).status === "number";
+      if (isStatusError(error) && error.status === 0) {
+        setError(
+          `Cannot reach Soil service at ${API_BASE.soil}. Ensure the Soil backend is running.`
+        );
+      } else {
+        setError("Failed to fetch soil data. Please check backend connection.");
+      }
       setData(null);
     } finally {
       setLoading(false);

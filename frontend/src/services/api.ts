@@ -10,19 +10,21 @@ import type {
   PestResponse,
 } from "../types";
 
-const API_BASE = {
-  ndvi: import.meta.env.VITE_NDVI_API_URL || "http://localhost:5001",
-  soil: import.meta.env.VITE_SOIL_API_URL || "http://localhost:5002",
-  weather: import.meta.env.VITE_WEATHER_API_URL || "http://localhost:5003",
-  crops: import.meta.env.VITE_CROPS_API_URL || "http://localhost:5004",
-  water: import.meta.env.VITE_WATER_API_URL || "http://localhost:5005",
-  pests: import.meta.env.VITE_PESTS_API_URL || "http://localhost:5006",
+export const API_BASE = {
+  ndvi: import.meta.env.VITE_NDVI_API_URL || "/api/ndvi",
+  soil: import.meta.env.VITE_SOIL_API_URL || "/api/soil",
+  weather: import.meta.env.VITE_WEATHER_API_URL || "/api/weather",
+  // backend uses singular 'crop' namespace
+  crops: import.meta.env.VITE_CROPS_API_URL || "/api/crop",
+  water: import.meta.env.VITE_WATER_API_URL || "/api/water",
+  // backend uses singular 'pest' namespace
+  pests: import.meta.env.VITE_PESTS_API_URL || "/api/pest",
 };
 
 export const api = {
   ndvi: {
     analyze: (lat: number, lng: number) =>
-      apiClient<NDVIResponse>(`${API_BASE.ndvi}/api/ndvi/analyze`, {
+      apiClient<NDVIResponse>(`${API_BASE.ndvi}/analyze`, {
         method: "POST",
         body: JSON.stringify({ latitude: lat, longitude: lng }),
       }),
@@ -30,7 +32,7 @@ export const api = {
 
   soil: {
     analyze: (lat: number, lng: number, includeNDVI = true) =>
-      apiClient<SoilResponse>(`${API_BASE.soil}/api/soil/analyze`, {
+      apiClient<SoilResponse>(`${API_BASE.soil}/analyze`, {
         method: "POST",
         body: JSON.stringify({
           latitude: lat,
@@ -44,12 +46,12 @@ export const api = {
   weather: {
     current: (lat: number, lng: number) =>
       apiClient<WeatherResponse>(
-        `${API_BASE.weather}/api/weather/current?lat=${lat}&lng=${lng}`
+        `${API_BASE.weather}/current?lat=${lat}&lng=${lng}`
       ),
 
     agricultural: (lat: number, lng: number) =>
       apiClient<WeatherResponse>(
-        `${API_BASE.weather}/api/weather/agricultural?lat=${lat}&lng=${lng}`
+        `${API_BASE.weather}/agricultural?lat=${lat}&lng=${lng}`
       ),
   },
 
@@ -60,16 +62,21 @@ export const api = {
       crop_type: string;
       growth_stage: string;
     }) =>
-      apiClient<WaterResponse>(
-        `${API_BASE.water}/api/water/irrigation/calculate`,
-        {
-          method: "POST",
-          body: JSON.stringify(data),
-        }
-      ),
+      apiClient<WaterResponse>(`${API_BASE.water}/irrigation/calculate`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
   },
 
   crops: {
+    // Integrated: ask backend to fetch soil/weather/ndvi and compute recommendations
+    recommendIntegrated: (lat: number, lng: number) =>
+      apiClient<CropResponse>(`${API_BASE.crops}/recommend/integrated`, {
+        method: "POST",
+        body: JSON.stringify({ latitude: lat, longitude: lng }),
+      }),
+
+    // Legacy/simple: supply all parameters from client (keeps compatibility)
     recommend: (data: {
       latitude: number;
       longitude: number;
@@ -78,7 +85,7 @@ export const api = {
       temp_mean: number;
       ndvi: number;
     }) =>
-      apiClient<CropResponse>(`${API_BASE.crops}/api/crop/recommend`, {
+      apiClient<CropResponse>(`${API_BASE.crops}/recommend`, {
         method: "POST",
         body: JSON.stringify(data),
       }),
@@ -91,7 +98,7 @@ export const api = {
       crop_type: string;
       additional_factors?: Record<string, unknown>;
     }) =>
-      apiClient<PestResponse>(`${API_BASE.pests}/api/threats/comprehensive`, {
+      apiClient<PestResponse>(`${API_BASE.pests}/threats/comprehensive`, {
         method: "POST",
         body: JSON.stringify(data),
       }),

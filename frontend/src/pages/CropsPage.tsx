@@ -26,14 +26,11 @@ export const CropsPage: React.FC = () => {
     setLoading(true);
     setError("");
     try {
-      const result = await api.crops.recommend({
-        latitude: location.lat,
-        longitude: location.lng,
-        ph: 6.5,
-        rainfall: 800,
-        temp_mean: 25,
-        ndvi: 0.68,
-      });
+      // Use integrated endpoint so backend fetches NDVI, soil and weather itself
+      const result = await api.crops.recommendIntegrated(
+        location.lat,
+        location.lng
+      );
       setData(result);
     } catch (error) {
       console.error("Crops API error:", error);

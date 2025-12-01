@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useLocation } from "../hooks/useLocation";
-import { api } from "../services/api";
+import { api, API_BASE } from "../services/api";
 import type { WaterResponse } from "../types";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
@@ -16,7 +16,8 @@ export const WaterPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [cropType, setCropType] = useState("wheat");
-  const [growthStage, setGrowthStage] = useState("vegetative");
+  // Use growth stage values that match backend expectations: 'initial', 'mid', 'late'
+  const [growthStage, setGrowthStage] = useState("mid");
 
   const handleLogout = () => {
     logout();
@@ -35,11 +36,24 @@ export const WaterPage: React.FC = () => {
         growth_stage: growthStage,
       });
       setData(result);
-    } catch (error) {
-      console.error("Water API error:", error);
-      setError(
-        "Failed to fetch water management data. Please check backend connection."
-      );
+    } catch (err) {
+      console.error("Water API error:", err);
+      // Narrow the error to a typed shape instead of `any`
+      const e = err as { status?: number } | undefined;
+      if (e && e.status === 0) {
+        setError(
+          `Cannot reach Water service at ${API_BASE.water}. Ensure the Water backend is running.`
+        );
+      } else if (err instanceof Error) {
+        setError(
+          err.message ||
+            "Failed to fetch water management data. Please check backend connection."
+        );
+      } else {
+        setError(
+          "Failed to fetch water management data. Please check backend connection."
+        );
+      }
       setData(null);
     } finally {
       setLoading(false);
@@ -116,9 +130,8 @@ export const WaterPage: React.FC = () => {
                 className="w-full p-2 border rounded"
               >
                 <option value="initial">Initial</option>
-                <option value="vegetative">Vegetative</option>
-                <option value="flowering">Flowering</option>
-                <option value="maturity">Maturity</option>
+                <option value="mid">Vegetative / Mid</option>
+                <option value="late">Flowering / Late</option>
               </select>
             </div>
           </div>

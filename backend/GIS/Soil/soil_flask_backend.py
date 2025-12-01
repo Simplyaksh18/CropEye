@@ -178,9 +178,41 @@ def analyze_soil():
             include_ndvi=include_ndvi
         )
         
-        # Check for errors in result
+        # Check for errors in result; if upstream failed, return a graceful fallback
         if 'error' in soil_result:
-            return jsonify(soil_result), 400
+            logger.warning(f"Soil collector returned error; providing fallback: {soil_result.get('detail')}")
+            # Construct a safe fallback response so frontend doesn't hang
+            fallback = {
+                'success': False,
+                'error': 'Upstream service unavailable - returning fallback values',
+                'detail': soil_result.get('detail', ''),
+                'coordinates': {'latitude': latitude, 'longitude': longitude},
+                'soil_properties': {
+                    'ph': {'value': 6.5, 'unit': 'pH', 'classification': 'Neutral'},
+                    'organic_carbon': {'value': 2.0, 'unit': '%', 'classification': 'Medium'},
+                    'nitrogen': {'value': 10, 'unit': 'ppm', 'classification': 'Medium'},
+                    'phosphorus': {'value': 15, 'unit': 'ppm', 'classification': 'Medium'},
+                    'potassium': {'value': 120, 'unit': 'ppm', 'classification': 'Medium'},
+                    'texture': {'value': 'Loam', 'classification': 'Loam'}
+                },
+                'confidence_score': 0.5,
+                'data_sources': ['fallback'],
+            }
+
+            # Add API metadata and recommendations where appropriate
+            fallback['api_info'] = {
+                'processing_time_sec': round(time.time() - start_time, 2),
+                'server_timestamp': datetime.now().isoformat(),
+                'api_version': '2.0.0',
+                'coordinate_source': coordinate_source,
+                'analysis_depth': analysis_depth,
+            }
+
+            if analysis_depth == 'comprehensive':
+                fallback['management_recommendations'] = _generate_management_recommendations(fallback)
+                fallback['crop_suitability'] = _assess_crop_suitability(fallback)
+
+            return jsonify(fallback), 200
         
         # Add API metadata
         soil_result['api_info'] = {
@@ -807,9 +839,9 @@ if __name__ == '__main__':
     print('   4. Regional Modeling (62% confidence)')
     print('=' * 80)
     
-    # Get port from environment or default to 5002
-    port = int(os.getenv('FLASK_PORT', 5000))
-    host = os.getenv('FLASK_HOST', '0.0.0.0')
+    # Prefer service-specific env vars to avoid colliding with the main app's FLASK_PORT
+    port = int(os.getenv('SOIL_FLASK_PORT', os.getenv('FLASK_PORT', 5002)))
+    host = os.getenv('SOIL_FLASK_HOST', os.getenv('FLASK_HOST', '0.0.0.0'))
     
     print(f"\nServer starting on http://{host}:{port}")
     print(f"NDVI module integration: {'Active' if (ndvi_integration and ndvi_integration.is_available()) else 'Fallback'}")

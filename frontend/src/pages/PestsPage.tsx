@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useLocation } from "../hooks/useLocation";
-import { api } from "../services/api";
+import { api, API_BASE } from "../services/api";
 import type { PestResponse } from "../types";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
@@ -35,11 +35,24 @@ export const PestsPage: React.FC = () => {
           crop_type: cropType,
         });
         setData(result);
-      } catch (error) {
-        console.error("Pests API error:", error);
-        setError(
-          "Failed to fetch pest and disease data. Please check backend connection."
-        );
+      } catch (err: unknown) {
+        console.error("Pests API error:", err);
+
+        const isStatusError = (e: unknown): e is { status: number } =>
+          typeof e === "object" &&
+          e !== null &&
+          "status" in e &&
+          typeof (e as { status?: unknown }).status === "number";
+
+        if (isStatusError(err) && err.status === 0) {
+          setError(
+            `Cannot reach Pests service at ${API_BASE.pests}. Ensure the Pests backend is running.`
+          );
+        } else {
+          setError(
+            "Failed to fetch pest and disease data. Please check backend connection."
+          );
+        }
         setData(null);
       } finally {
         setLoading(false);

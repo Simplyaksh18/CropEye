@@ -4,6 +4,8 @@ import { useAuth } from "../hooks/useAuth";
 import { useLocation } from "../hooks/useLocation";
 import ModuleCard from "../components/ModuleCard";
 import LocationInput from "../components/LocationInput";
+import FloatingCards from "../components/FloatingCards";
+import ServicesStatus from "../components/ServicesStatus";
 import Navbar from "../components/Navbar";
 
 export const DashboardPage: React.FC = () => {
@@ -142,89 +144,33 @@ export const DashboardPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-white/70 backdrop-blur-sm rounded-xl p-8">
-                <h3 className="text-3xl font-bold text-blue-700 mb-6">
-                  💡 Why Choose CropEye?
-                </h3>
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
-                  <div className="bg-linear-to-br from-green-100 to-green-200 p-4 rounded-lg border border-green-300">
-                    <h4 className="font-bold text-green-800 mb-3 text-base">
-                      📈 Increase Yields
-                    </h4>
-                    <p className="text-gray-700 text-sm leading-relaxed">
-                      Boost productivity by 15-25% through precision agriculture
-                      techniques and data-driven crop management strategies.
-                    </p>
-                  </div>
-                  <div className="bg-linear-to-br from-blue-100 to-blue-200 p-4 rounded-lg border border-blue-300">
-                    <h4 className="font-bold text-blue-800 mb-3 text-base">
-                      💰 Reduce Costs
-                    </h4>
-                    <p className="text-gray-700 text-sm leading-relaxed">
-                      Save up to 30% on inputs through optimized resource
-                      allocation, reduced waste, and targeted application of
-                      fertilizers and pesticides.
-                    </p>
-                  </div>
-                  <div className="bg-linear-to-br from-yellow-100 to-yellow-200 p-4 rounded-lg border border-yellow-300">
-                    <h4 className="font-bold text-yellow-800 mb-3 text-base">
-                      🌱 Early Detection
-                    </h4>
-                    <p className="text-gray-700 text-sm leading-relaxed">
-                      Identify problems before they become visible with
-                      continuous monitoring and predictive analytics for
-                      proactive intervention.
-                    </p>
-                  </div>
-                  <div className="bg-linear-to-br from-purple-100 to-purple-200 p-4 rounded-lg border border-purple-300">
-                    <h4 className="font-bold text-purple-800 mb-3 text-base">
-                      📊 Smart Decisions
-                    </h4>
-                    <p className="text-gray-700 text-sm leading-relaxed">
-                      Make informed choices backed by satellite data, AI
-                      analysis, and historical trends for sustainable and
-                      profitable farming.
-                    </p>
-                  </div>
-                  <div className="bg-linear-to-br from-indigo-100 to-indigo-200 p-4 rounded-lg border border-indigo-300">
-                    <h4 className="font-bold text-indigo-800 mb-3 text-base">
-                      🌍 Climate Adaptation
-                    </h4>
-                    <p className="text-gray-700 text-sm leading-relaxed">
-                      Adapt to changing weather patterns with predictive
-                      analytics and climate-resilient crop recommendations for
-                      future-proof farming.
-                    </p>
-                  </div>
-                  <div className="bg-linear-to-br from-pink-100 to-pink-200 p-4 rounded-lg border border-pink-300">
-                    <h4 className="font-bold text-pink-800 mb-3 text-base">
-                      📱 Easy Access
-                    </h4>
-                    <p className="text-gray-700 text-sm leading-relaxed">
-                      User-friendly mobile and web interface accessible
-                      anywhere, anytime for modern farmers and agricultural
-                      professionals.
-                    </p>
-                  </div>
-                  <div className="bg-linear-to-br from-teal-100 to-teal-200 p-4 rounded-lg border border-teal-300">
-                    <h4 className="font-bold text-teal-800 mb-3 text-base">
-                      🔄 Continuous Learning
-                    </h4>
-                    <p className="text-gray-700 text-sm leading-relaxed">
-                      AI models continuously improve with new data, providing
-                      increasingly accurate recommendations and adapting to your
-                      farm.
-                    </p>
-                  </div>
-                  <div className="bg-linear-to-br from-orange-100 to-orange-200 p-4 rounded-lg border border-orange-300">
-                    <h4 className="font-bold text-orange-800 mb-3 text-base">
-                      🤝 Expert Support
-                    </h4>
-                    <p className="text-gray-700 text-sm leading-relaxed">
-                      Access to agricultural experts, community insights, and
-                      personalized support for complex farming challenges.
-                    </p>
-                  </div>
+              {/* Compact highlights - keep dashboard informative while
+                  FloatingCards provides the dynamic Why-Choose messages */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-white p-6 rounded-lg shadow border">
+                  <h4 className="font-semibold text-gray-800 mb-2">
+                    Active Fields
+                  </h4>
+                  <p className="text-3xl font-bold text-green-700">27</p>
+                  <p className="text-sm text-gray-500">
+                    Fields being monitored
+                  </p>
+                </div>
+                <div className="bg-white p-6 rounded-lg shadow border">
+                  <h4 className="font-semibold text-gray-800 mb-2">Avg NDVI</h4>
+                  <p className="text-3xl font-bold text-blue-600">0.62</p>
+                  <p className="text-sm text-gray-500">
+                    Field health index (sample)
+                  </p>
+                </div>
+                <div className="bg-white p-6 rounded-lg shadow border">
+                  <h4 className="font-semibold text-gray-800 mb-2">
+                    Connected Sensors
+                  </h4>
+                  <p className="text-3xl font-bold text-orange-600">12</p>
+                  <p className="text-sm text-gray-500">
+                    Live soil & weather sensors
+                  </p>
                 </div>
               </div>
             </div>
@@ -234,6 +180,11 @@ export const DashboardPage: React.FC = () => {
         {/* Location Input - After main content */}
         <div className="mb-8">
           <LocationInput onLocationSelect={setLocation} />
+        </div>
+
+        <div className="mb-8 flex flex-col md:flex-row gap-4 items-start">
+          <ServicesStatus />
+          <FloatingCards />
         </div>
 
         {/* Current Location Display */}

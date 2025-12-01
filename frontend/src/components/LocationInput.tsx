@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { Location } from "../types";
 import { useLocation } from "../hooks/useLocation";
 
@@ -9,6 +10,7 @@ interface LocationInputProps {
 export const LocationInput: React.FC<LocationInputProps> = ({
   onLocationSelect,
 }) => {
+  const navigate = useNavigate();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -21,6 +23,9 @@ export const LocationInput: React.FC<LocationInputProps> = ({
 
     // Immediately call the parent callback
     onLocationSelect(preset);
+
+    // Do not auto-redirect after selecting a preset location.
+    // The app should not force navigation when a sample coordinate is chosen.
 
     // Clear any previous errors
     setError("");

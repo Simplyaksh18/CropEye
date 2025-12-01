@@ -2,13 +2,18 @@
 
 ## Frontend Thorough Testing
 
-- [ ] Visit DashboardPage, verify presence of all modules and location input.
-- [ ] For each module page (Crops, NDVI, Weather, Soil, Water, Pests):
-  - [ ] Set location input on DashboardPage.
-  - [ ] Navigate to the module page.
-  - [ ] Verify API data is fetched and displayed correctly.
+- [x] Visit DashboardPage, verify presence of all modules and location input.
+- [x] For each module page (Crops, NDVI, Weather, Soil, Water, Pests):
+  - [x] Set location input on DashboardPage.
+  - [x] Navigate to the module page.
+  - [x] Verify API data is fetched and displayed correctly (Crops API tested successfully).
   - [ ] Test loading and error states by simulating delays/errors.
   - [ ] Test interactive elements like buttons, forms, and navigation.
+  - [x] Test NDVI page API calls.
+  - [ ] Test Weather page API calls.
+  - [ ] Test Soil page API calls.
+  - [ ] Test Water page API calls.
+  - [ ] Test Pests page API calls.
 - [ ] Test LoginPage for authentication flows.
 - [ ] Test Navbar functionality and logout flow.
 - [ ] Check UI responsiveness and styling consistency.
