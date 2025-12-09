@@ -313,6 +313,21 @@ def integrated_assessment():
                 additional_factors=additional_factors
             )
             result.update(assessment)
+            
+            # Add climate message if no threats detected
+            if assessment['total_threats'] == 0:
+                temp = weather_data['temp']
+                humidity = weather_data['humidity']
+                
+                if temp < 18:
+                    result['climate_message'] = f"Current temperature ({temp}°C) is too cold for common pest activity. Most agricultural pests become inactive below 18°C."
+                elif temp > 38:
+                    result['climate_message'] = f"Current temperature ({temp}°C) is too hot for most pest activity. Extreme heat reduces pest populations."
+                elif humidity < 40:
+                    result['climate_message'] = f"Current humidity ({humidity}%) is too low for most pest activity. Dry conditions inhibit many pest species."
+                else:
+                    result['climate_message'] = f"Current climate conditions (Temp: {temp}°C, Humidity: {humidity}%) are not favorable for common pests affecting {crop_type}."
+            
             logger.info(f"✅ Threats: {assessment['total_threats']} detected")
         else:
             result['success'] = False

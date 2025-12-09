@@ -35,7 +35,7 @@ from dotenv import load_dotenv
 
 # Load .env from the backend root so API keys available to tests
 backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-dotenv_path = os.path.join(backend_dir, '.env')
+dotenv_path = os.path.join(backend_dir, 'file.env')
 load_dotenv(dotenv_path=dotenv_path)
 
 # Terminal colors

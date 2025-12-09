@@ -1,188 +1,107 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import type { Location } from "../types";
-import { useLocation } from "../hooks/useLocation";
+// src/components/LocationInput.tsx
+import { useContext, useState } from "react";
+import { LocationContext } from "../context/LocationContext";
 
-interface LocationInputProps {
-  onLocationSelect: (location: Location) => void;
-}
+export default function LocationInput() {
+  const { location, setLocation } = useContext(LocationContext)!;
 
-export const LocationInput: React.FC<LocationInputProps> = ({
-  onLocationSelect,
-}) => {
-  const navigate = useNavigate();
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const { presetLocations } = useLocation();
+  const [query, setQuery] = useState("");
+  type LocationOption = { name: string; lat: number; lng: number };
 
-  const handlePresetLocation = (preset: Location) => {
-    // Update input field with formatted coordinates
-    const formattedInput = `${preset.lat}, ${preset.lng}`;
-    setInput(formattedInput);
+  const [suggestions, setSuggestions] = useState<LocationOption[]>([]);
+  const [loadingGPS, setLoadingGPS] = useState(false);
 
-    // Immediately call the parent callback
-    onLocationSelect(preset);
+  // 🌍 Static preset locations fallback
+  const staticLocations = [
+    { name: "Chennai, India", lat: 13.0827, lng: 80.2707 },
+    { name: "Coimbatore, India", lat: 11.0168, lng: 76.9558 },
+    { name: "Bengaluru, India", lat: 12.9716, lng: 77.5946 },
+    { name: "Delhi, India", lat: 28.7041, lng: 77.1025 },
+  ];
 
-    // Do not auto-redirect after selecting a preset location.
-    // The app should not force navigation when a sample coordinate is chosen.
+  const useGPS = () => {
+    if (!navigator.geolocation) return;
 
-    // Clear any previous errors
-    setError("");
-  };
-
-  const parseCoordinates = (input: string): Location | null => {
-    // Try to parse as "lat,lng" or "lat lng"
-    const parts = input.split(/[,\s]+/).map((s) => s.trim());
-
-    if (parts.length === 2) {
-      const lat = parseFloat(parts[0]);
-      const lng = parseFloat(parts[1]);
-
-      if (
-        !isNaN(lat) &&
-        !isNaN(lng) &&
-        lat >= -90 &&
-        lat <= 90 &&
-        lng >= -180 &&
-        lng <= 180
-      ) {
-        return { lat, lng };
-      }
-    }
-    return null;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    const location = parseCoordinates(input);
-
-    if (!location) {
-      setError("Please enter valid coordinates (e.g., 40.7128, -74.0060)");
-      setLoading(false);
-      return;
-    }
-
-    // Simulate API call delay
-    setTimeout(() => {
-      onLocationSelect(location);
-      setLoading(false);
-    }, 500);
-  };
-
-  const handleCurrentLocation = () => {
-    setLoading(true);
-    setError("");
-
-    if (!navigator.geolocation) {
-      setError("Geolocation is not supported by this browser");
-      setLoading(false);
-      return;
-    }
-
+    setLoadingGPS(true);
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const location = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        };
-
-        // Fill the input box with current location
-        setInput(`${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`);
-
-        onLocationSelect(location);
-        setLoading(false);
+      (pos) => {
+        setLocation({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          name: "📍 My Location",
+        });
+        setLoadingGPS(false);
       },
-      () => {
-        setError("Unable to retrieve your location");
-        setLoading(false);
-      }
+      () => setLoadingGPS(false)
     );
   };
 
-  return (
-    <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">
-        📍 Set Your Location
-      </h2>
+  const handleSelect = (loc: LocationOption) => {
+    setLocation({
+      lat: loc.lat,
+      lng: loc.lng,
+      name: loc.name,
+    });
+    setQuery("");
+    setSuggestions([]);
+  };
 
-      {/* Preset Locations */}
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-3">
-          Quick Select Sample Locations:
-        </label>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {presetLocations.map((preset, index) => (
-            <button
-              key={index}
-              type="button"
-              onClick={() => handlePresetLocation(preset)}
-              disabled={loading}
-              className="p-3 border border-gray-300 rounded-lg hover:bg-green-50 hover:border-green-300 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed text-left"
+  return (
+    <div className="bg-white p-4 rounded-xl shadow mb-6">
+      <p className="text-sm font-medium text-gray-700 mb-2">
+        Set Your Farm Location
+      </p>
+
+      {/* Input Box */}
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search or use GPS"
+        className="border rounded-lg w-full p-2 text-gray-700"
+      />
+
+      {/* Suggestions dropdown */}
+      {suggestions && suggestions.length > 0 && (
+        <div className="bg-white border rounded-lg mt-1 shadow-md">
+          {suggestions.map((loc, idx) => (
+            <div
+              key={idx}
+              className="p-2 hover:bg-gray-200 cursor-pointer"
+              onClick={() => handleSelect(loc)}
             >
-              <div className="font-medium text-gray-800">{preset.name}</div>
-              <div className="text-sm text-gray-500">
-                {preset.lat.toFixed(4)}, {preset.lng.toFixed(4)}
-              </div>
-            </button>
+              {loc.name}
+            </div>
           ))}
         </div>
+      )}
+
+      {/* Static Quick Picks */}
+      <div className="flex flex-wrap gap-2 mt-3">
+        {staticLocations.map((loc, idx) => (
+          <button
+            key={idx}
+            onClick={() => handleSelect(loc)}
+            className="bg-green-50 text-green-700 px-3 py-1 rounded-lg border"
+          >
+            {loc.name}
+          </button>
+        ))}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label
-            htmlFor="coordinates"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
-            Enter Coordinates (Latitude, Longitude)
-          </label>
-          <input
-            id="coordinates"
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="e.g., 40.7128, -74.0060"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
-            disabled={loading}
-          />
-        </div>
+      {/* GPS Button */}
+      <button
+        onClick={useGPS}
+        className="bg-green-600 text-white mt-3 px-4 py-2 rounded-lg w-full"
+      >
+        {loadingGPS ? "Fetching GPS…" : "📍 Use My GPS Location"}
+      </button>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {error}
-          </div>
-        )}
-
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            disabled={loading || !input.trim()}
-            className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
-          >
-            {loading ? "Setting..." : "Set Location"}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleCurrentLocation}
-            disabled={loading}
-            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
-          >
-            {loading ? "Getting..." : "📍 Use Current Location"}
-          </button>
-        </div>
-      </form>
-
-      <p className="mt-4 text-xs text-gray-500">
-        Enter coordinates as "latitude, longitude" or use your current location.
-        This information is used for accurate agricultural recommendations.
-      </p>
+      {/* Display selected */}
+      {location.lat && (
+        <p className="mt-2 text-gray-600 text-center text-sm">
+          Selected: <b>{location.name}</b>
+        </p>
+      )}
     </div>
   );
-};
-
-export default LocationInput;
+}

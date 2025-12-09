@@ -38,6 +38,9 @@ except ImportError as e:
     logging.error(f"Failed to import modules: {e}")
     sys.exit(1)
 
+# Import requests for API calls
+import requests
+
 # Flask app initialization
 app = Flask(__name__)
 CORS(app)
@@ -51,6 +54,10 @@ logger = logging.getLogger(__name__)
 
 # Set environment variables from root backend .env
 env_creds.set_environment_variables()
+
+# External service URLs
+WEATHER_API_URL = os.getenv('WEATHER_API_URL', 'http://127.0.0.1:5003')
+OPENWEATHER_API_KEY = os.getenv('OPENWEATHER_API_KEY', '')
 
 # Initialize soil data collector with Copernicus integration
 try:
@@ -170,6 +177,20 @@ def analyze_soil():
         
         logger.info(f"🛰️ Soil analysis request: ({latitude}, {longitude}) [Source: {coordinate_source}]")
         
+        # Fetch weather data to supplement soil analysis
+        weather_data = None
+        try:
+            weather_response = requests.get(
+                f"{WEATHER_API_URL}/api/weather/current",
+                params={'lat': latitude, 'lng': longitude},
+                timeout=10
+            )
+            if weather_response.status_code == 200:
+                weather_data = weather_response.json()
+                logger.info(f"✅ Weather data fetched for rainfall info")
+        except Exception as e:
+            logger.warning(f"⚠️ Could not fetch weather data: {e}")
+        
         # Perform soil analysis with new enhanced collector
         soil_result = soil_collector.get_soil_data(
             latitude=latitude,
@@ -222,6 +243,15 @@ def analyze_soil():
             'coordinate_source': coordinate_source,
             'analysis_depth': analysis_depth
         }
+        
+        # Add rainfall data from weather if available
+        if weather_data and 'rain' in weather_data:
+            rain_value = weather_data['rain']
+            if isinstance(rain_value, dict):
+                soil_result['weather_rainfall_1h'] = rain_value.get('1h', 0)
+            else:
+                soil_result['weather_rainfall_1h'] = rain_value
+            soil_result['weather_data_integrated'] = True
         
         # Add management recommendations if comprehensive analysis
         if analysis_depth == 'comprehensive':

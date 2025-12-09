@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useLocation } from "../hooks/useLocation";
-import { api, API_BASE } from "../services/api";
+import api from "../services/api";
 import type { PestResponse } from "../types";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
@@ -29,30 +29,17 @@ export const PestsPage: React.FC = () => {
       setLoading(true);
       setError("");
       try {
-        const result = await api.pests.assess({
-          temp: 28,
-          humidity: 65,
-          crop_type: cropType,
-        });
+        const result = await api.pests.assess(
+          location.lat!,
+          location.lng!,
+          cropType
+        );
         setData(result);
-      } catch (err: unknown) {
-        console.error("Pests API error:", err);
-
-        const isStatusError = (e: unknown): e is { status: number } =>
-          typeof e === "object" &&
-          e !== null &&
-          "status" in e &&
-          typeof (e as { status?: unknown }).status === "number";
-
-        if (isStatusError(err) && err.status === 0) {
-          setError(
-            `Cannot reach Pests service at ${API_BASE.pests}. Ensure the Pests backend is running.`
-          );
-        } else {
-          setError(
-            "Failed to fetch pest and disease data. Please check backend connection."
-          );
-        }
+      } catch (error) {
+        console.error("Pests API error:", error);
+        setError(
+          "Failed to fetch pest and disease data. Please check backend connection."
+        );
         setData(null);
       } finally {
         setLoading(false);
@@ -61,9 +48,6 @@ export const PestsPage: React.FC = () => {
 
     fetchData();
   }, [location, cropType]);
-
-  if (!location) return <ErrorMessage message="Set location first" />;
-  if (loading) return <LoadingSpinner />;
 
   const getRiskColor = (level: string) => {
     const colors = {
@@ -80,159 +64,206 @@ export const PestsPage: React.FC = () => {
     return icons[level as keyof typeof icons] || "✅";
   };
 
-  return (
-    <div className="min-h-screen bg-linear-to-br from-green-100 to-amber-100">
-      <Navbar onLogout={handleLogout} />
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold mb-6">Pest & Disease Detection</h1>
+  if (!location) return <ErrorMessage message="Set location first" />;
 
+  return (
+    <div className="min-h-screen bg-linear-to-br from-red-200 to-orange-300">
+      <Navbar onLogout={handleLogout} />
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <h1 className="text-3xl font-bold text-red-700 mb-3">
+          🐛 Pest & Disease Detection
+        </h1>
+        <p className="text-gray-600 mb-6">
+          AI-powered analysis of potential threats to your crops.
+        </p>
+
+        {loading && <LoadingSpinner message="Checking for pest attacks..." />}
         {error && <ErrorMessage message={error} />}
 
-        {/* Crop Selection */}
-        <div className="bg-white p-4 rounded-lg shadow mb-6">
-          <label className="block text-sm font-medium mb-2">Select Crop</label>
-          <select
-            value={cropType}
-            onChange={(e) => setCropType(e.target.value)}
-            className="w-full md:w-64 p-2 border rounded"
-          >
-            <option value="wheat">Wheat</option>
-            <option value="rice">Rice</option>
-            <option value="corn">Corn</option>
-            <option value="cotton">Cotton</option>
-          </select>
-        </div>
+        {/* Crop Selection - Only show when not loading */}
+        {!loading && (
+          <div className="bg-white p-4 rounded-lg shadow mb-6">
+            <label className="block text-sm font-medium mb-2">
+              Select Crop
+            </label>
+            <select
+              value={cropType}
+              onChange={(e) => setCropType(e.target.value)}
+              className="w-full md:w-64 p-2 border rounded"
+            >
+              <option value="wheat">Wheat</option>
+              <option value="rice">Rice</option>
+              <option value="corn">Corn</option>
+              <option value="cotton">Cotton</option>
+            </select>
+          </div>
+        )}
 
-        {data && (
+        {!loading && !error && data && (
           <div className="space-y-6">
+            {/* Climate Message */}
+            {data.climate_message && (
+              <div className="bg-blue-50 border border-blue-300 rounded-lg p-4 shadow">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">🌡️</span>
+                  <div>
+                    <h3 className="font-semibold text-blue-900 mb-1">
+                      Climate Conditions
+                    </h3>
+                    <p className="text-blue-800">{data.climate_message}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Pests */}
             <div>
               <h2 className="text-2xl font-bold mb-4">🐛 Detected Pests</h2>
-              <div className="space-y-4">
-                {data.pests.map((pest) => (
-                  <div
-                    key={pest.pest}
-                    className={`p-6 rounded-lg border-2 ${getRiskColor(
-                      pest.risk_level
-                    )}`}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-xl font-bold">{pest.pest}</h3>
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">
-                          {getRiskIcon(pest.risk_level)}
-                        </span>
-                        <span className="font-bold">
-                          {pest.risk_level} Risk
-                        </span>
+              {data.pests.length === 0 ? (
+                <div className="bg-gray-50 border border-gray-300 rounded-lg p-6 text-center">
+                  <p className="text-gray-600">
+                    No pests detected under current conditions.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {data.pests.map((pest) => (
+                    <div
+                      key={pest.pest}
+                      className={`p-6 rounded-lg border-2 ${getRiskColor(
+                        pest.risk_level
+                      )}`}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-xl font-bold">{pest.pest}</h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">
+                            {getRiskIcon(pest.risk_level)}
+                          </span>
+                          <span className="font-bold">
+                            {pest.risk_level} Risk
+                          </span>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="mb-3">
-                      <p className="text-sm mb-1">Risk Score</p>
-                      <div className="w-full bg-gray-200 rounded-full h-3">
-                        <div
-                          className={`h-3 rounded-full ${
-                            pest.risk_score >= 0.7
-                              ? "bg-red-600"
-                              : pest.risk_score >= 0.4
-                              ? "bg-yellow-600"
-                              : "bg-green-600"
-                          }`}
-                          style={{ width: `${pest.risk_score * 100}%` }}
-                        />
+                      <div className="mb-3">
+                        <p className="text-sm mb-1">Risk Score</p>
+                        <div className="w-full bg-gray-200 rounded-full h-3">
+                          <div
+                            className={`h-3 rounded-full ${
+                              pest.risk_score >= 0.7
+                                ? "bg-red-600"
+                                : pest.risk_score >= 0.4
+                                ? "bg-yellow-600"
+                                : "bg-green-600"
+                            }`}
+                            style={{ width: `${pest.risk_score * 100}%` }}
+                          />
+                        </div>
+                        <p className="text-xs mt-1">
+                          {(pest.risk_score * 100).toFixed(0)}%
+                        </p>
                       </div>
-                      <p className="text-xs mt-1">
-                        {(pest.risk_score * 100).toFixed(0)}%
-                      </p>
-                    </div>
 
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <h4 className="font-semibold mb-2">Symptoms</h4>
-                        <ul className="text-sm space-y-1">
-                          {pest.symptoms.map((symptom, idx) => (
-                            <li key={idx}>• {symptom}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold mb-2">Control Measures</h4>
-                        <ul className="text-sm space-y-1">
-                          {pest.control_measures.map((measure, idx) => (
-                            <li key={idx}>✓ {measure}</li>
-                          ))}
-                        </ul>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <h4 className="font-semibold mb-2">Symptoms</h4>
+                          <ul className="text-sm space-y-1">
+                            {pest.symptoms.map((symptom, idx) => (
+                              <li key={idx}>• {symptom}</li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold mb-2">
+                            Control Measures
+                          </h4>
+                          <ul className="text-sm space-y-1">
+                            {pest.control_measures.map((measure, idx) => (
+                              <li key={idx}>✓ {measure}</li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Diseases */}
             <div>
               <h2 className="text-2xl font-bold mb-4">🦠 Detected Diseases</h2>
-              <div className="space-y-4">
-                {data.diseases.map((disease) => (
-                  <div
-                    key={disease.disease}
-                    className={`p-6 rounded-lg border-2 ${getRiskColor(
-                      disease.risk_level
-                    )}`}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-xl font-bold">{disease.disease}</h3>
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">
-                          {getRiskIcon(disease.risk_level)}
-                        </span>
-                        <span className="font-bold">
-                          {disease.risk_level} Risk
-                        </span>
+              {data.diseases.length === 0 ? (
+                <div className="bg-gray-50 border border-gray-300 rounded-lg p-6 text-center">
+                  <p className="text-gray-600">
+                    No diseases detected under current conditions.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {data.diseases.map((disease) => (
+                    <div
+                      key={disease.disease}
+                      className={`p-6 rounded-lg border-2 ${getRiskColor(
+                        disease.risk_level
+                      )}`}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-xl font-bold">{disease.disease}</h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">
+                            {getRiskIcon(disease.risk_level)}
+                          </span>
+                          <span className="font-bold">
+                            {disease.risk_level} Risk
+                          </span>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="mb-3">
-                      <p className="text-sm mb-1">Risk Score</p>
-                      <div className="w-full bg-gray-200 rounded-full h-3">
-                        <div
-                          className={`h-3 rounded-full ${
-                            disease.risk_score >= 0.7
-                              ? "bg-red-600"
-                              : disease.risk_score >= 0.4
-                              ? "bg-yellow-600"
-                              : "bg-green-600"
-                          }`}
-                          style={{ width: `${disease.risk_score * 100}%` }}
-                        />
+                      <div className="mb-3">
+                        <p className="text-sm mb-1">Risk Score</p>
+                        <div className="w-full bg-gray-200 rounded-full h-3">
+                          <div
+                            className={`h-3 rounded-full ${
+                              disease.risk_score >= 0.7
+                                ? "bg-red-600"
+                                : disease.risk_score >= 0.4
+                                ? "bg-yellow-600"
+                                : "bg-green-600"
+                            }`}
+                            style={{ width: `${disease.risk_score * 100}%` }}
+                          />
+                        </div>
+                        <p className="text-xs mt-1">
+                          {(disease.risk_score * 100).toFixed(0)}%
+                        </p>
                       </div>
-                      <p className="text-xs mt-1">
-                        {(disease.risk_score * 100).toFixed(0)}%
-                      </p>
-                    </div>
 
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <h4 className="font-semibold mb-2">Symptoms</h4>
-                        <ul className="text-sm space-y-1">
-                          {disease.symptoms.map((symptom, idx) => (
-                            <li key={idx}>• {symptom}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold mb-2">Control Measures</h4>
-                        <ul className="text-sm space-y-1">
-                          {disease.control_measures.map((measure, idx) => (
-                            <li key={idx}>✓ {measure}</li>
-                          ))}
-                        </ul>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <h4 className="font-semibold mb-2">Symptoms</h4>
+                          <ul className="text-sm space-y-1">
+                            {disease.symptoms.map((symptom, idx) => (
+                              <li key={idx}>• {symptom}</li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold mb-2">
+                            Control Measures
+                          </h4>
+                          <ul className="text-sm space-y-1">
+                            {disease.control_measures.map((measure, idx) => (
+                              <li key={idx}>✓ {measure}</li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Educational Insights - Always visible */}
@@ -302,7 +333,9 @@ export const PestsPage: React.FC = () => {
             </div>
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 };
+
+export default PestsPage;

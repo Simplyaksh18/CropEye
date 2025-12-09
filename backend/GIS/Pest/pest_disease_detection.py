@@ -26,97 +26,12 @@ class PestDiseaseDetector:
     ML model integration ready
     """
     
-    # Pest risk database (conditions favorable for pests)
-    PEST_DATABASE = {
-        'aphids': {
-            'temp_range': (18, 27),
-            'humidity_range': (40, 85),
-            'crops_affected': ['wheat', 'rice', 'cotton', 'mustard'],
-            'severity_factors': {'high_nitrogen': 1.3, 'dry_spell': 0.7},
-            'symptoms': ['Curled leaves', 'Sticky honeydew', 'Stunted growth'],
-            'control': ['Neem oil spray', 'Ladybugs (biological)', 'Insecticidal soap']
-        },
-        'stem_borer': {
-            'temp_range': (22, 32),
-            'humidity_range': (70, 90),
-            'crops_affected': ['rice', 'maize', 'sugarcane'],
-            'severity_factors': {'continuous_flooding': 1.4, 'drought': 0.6},
-            'symptoms': ['Dead heart', 'White ear head', 'Bore holes in stem'],
-            'control': ['Trichogramma release', 'Remove egg masses', 'Cartap hydrochloride']
-        },
-        'bollworm': {
-            'temp_range': (25, 35),
-            'humidity_range': (50, 80),
-            'crops_affected': ['cotton', 'tomato', 'chickpea'],
-            'severity_factors': {'flowering_stage': 1.5, 'cloudy_weather': 1.2},
-            'symptoms': ['Damaged bolls', 'Entry holes', 'Frass near flowers'],
-            'control': ['Bt cotton', 'NPV spray', 'Pheromone traps']
-        },
-        'whitefly': {
-            'temp_range': (25, 32),
-            'humidity_range': (60, 85),
-            'crops_affected': ['cotton', 'tomato', 'okra', 'beans'],
-            'severity_factors': {'water_stress': 1.3, 'dense_planting': 1.2},
-            'symptoms': ['Yellowing leaves', 'Sooty mold', 'Leaf curling'],
-            'control': ['Yellow sticky traps', 'Neem extract', 'Imidacloprid']
-        }
-    }
-
     # Per-pest weight map to allow fine-grained tuning
     # Values <1.0 reduce computed risk; >1.0 increase it
     PEST_WEIGHT_MAP = {
         'aphids': 0.50,     # lower aphid risk multiplier to reduce false 'Critical'
         'bollworm': 0.85,    # slightly lower bollworm risk
         # other pests default to 1.0
-    }
-    
-    # Disease risk database
-    DISEASE_DATABASE = {
-        'blast': {
-            'pathogen': 'Magnaporthe oryzae (fungus)',
-            'temp_range': (25, 28),
-            'humidity_range': (85, 100),
-            'crops_affected': ['rice'],
-            'severity_factors': {'high_nitrogen': 1.4, 'night_dew': 1.3},
-            'symptoms': ['Elliptical lesions', 'Brown spots', 'Neck rot'],
-            'control': ['Tricyclazole', 'Resistant varieties', 'Proper spacing']
-        },
-        'rust': {
-            'pathogen': 'Puccinia spp. (fungus)',
-            'temp_range': (15, 25),
-            'humidity_range': (70, 100),
-            'crops_affected': ['wheat', 'barley', 'oats'],
-            'severity_factors': {'cool_moist': 1.5, 'susceptible_variety': 1.4},
-            'symptoms': ['Orange-red pustules', 'Yellow spots', 'Reduced yield'],
-            'control': ['Propiconazole', 'Resistant varieties', 'Timely sowing']
-        },
-        'blight': {
-            'pathogen': 'Alternaria/Phytophthora (fungus)',
-            'temp_range': (20, 30),
-            'humidity_range': (80, 95),
-            'crops_affected': ['potato', 'tomato', 'rice'],
-            'severity_factors': {'waterlogging': 1.5, 'wounded_plants': 1.3},
-            'symptoms': ['Dark lesions', 'Water-soaked spots', 'Leaf wilting'],
-            'control': ['Mancozeb', 'Copper fungicides', 'Crop rotation']
-        },
-        'powdery_mildew': {
-            'pathogen': 'Erysiphe/Oidium (fungus)',
-            'temp_range': (20, 27),
-            'humidity_range': (50, 70),
-            'crops_affected': ['wheat', 'pea', 'mango', 'grapes'],
-            'severity_factors': {'dense_canopy': 1.3, 'dry_weather': 1.2},
-            'symptoms': ['White powdery coating', 'Leaf distortion', 'Reduced vigor'],
-            'control': ['Sulfur dust', 'Carbendazim', 'Adequate spacing']
-        },
-        'bacterial_wilt': {
-            'pathogen': 'Ralstonia solanacearum (bacteria)',
-            'temp_range': (27, 35),
-            'humidity_range': (70, 90),
-            'crops_affected': ['tomato', 'potato', 'eggplant', 'banana'],
-            'severity_factors': {'high_soil_temp': 1.5, 'waterlogging': 1.4},
-            'symptoms': ['Sudden wilting', 'Vascular browning', 'No recovery at night'],
-            'control': ['Resistant varieties', 'Crop rotation', 'Soil solarization']
-        }
     }
 
     # Per-disease weight map to tune disease sensitivities
@@ -131,7 +46,36 @@ class PestDiseaseDetector:
     
     def __init__(self):
         """Initialize Pest & Disease Detector"""
-        pass
+        # Load pest data from JSON
+        pests_file = os.path.join(os.path.dirname(__file__), 'pests_data.json')
+        with open(pests_file, 'r') as f:
+            pests_data = json.load(f)
+        self.PEST_DATABASE = {}
+        for pest, data in pests_data.items():
+            self.PEST_DATABASE[pest] = {
+                'temp_range': tuple(data['temp_range']),
+                'humidity_range': tuple(data['humidity_range']),
+                'crops_affected': data['crops_affected'],
+                'severity_factors': data['severity_factors'],
+                'symptoms': data['symptoms'],
+                'control': data['control']
+            }
+
+        # Load disease data from JSON
+        diseases_file = os.path.join(os.path.dirname(__file__), 'diseases_data.json')
+        with open(diseases_file, 'r') as f:
+            diseases_data = json.load(f)
+        self.DISEASE_DATABASE = {}
+        for disease, data in diseases_data.items():
+            self.DISEASE_DATABASE[disease] = {
+                'pathogen': data['pathogen'],
+                'temp_range': tuple(data['temp_range']),
+                'humidity_range': tuple(data['humidity_range']),
+                'crops_affected': data['crops_affected'],
+                'severity_factors': data['severity_factors'],
+                'symptoms': data['symptoms'],
+                'control': data['control']
+            }
     
     def assess_pest_risk(self, temp, humidity, crop_type, additional_factors=None):
         """

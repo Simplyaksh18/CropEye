@@ -1,283 +1,404 @@
-import React, { useState, useEffect } from "react";
+import { useEffect, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { LocationContext } from "../context/LocationContext";
 import { useAuth } from "../hooks/useAuth";
-import { useLocation } from "../hooks/useLocation";
-import { api, API_BASE } from "../services/api";
-import type { WaterResponse } from "../types";
+import api from "../services/api";
+import Navbar from "../components/Navbar";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
-import Navbar from "../components/Navbar";
+import type { Crop } from "../types";
 
-export const WaterPage: React.FC = () => {
+export default function WaterPage() {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { location } = useLocation();
-  const [data, setData] = useState<WaterResponse | null>(null);
+  const { location } = useContext(LocationContext)!;
+  const [cropsData, setCropsData] = useState<Crop[]>([]);
+  const [waterAnalysis, setWaterAnalysis] = useState<
+    Map<
+      string,
+      {
+        crop_type?: string;
+        schedule?: {
+          irrigation?: {
+            gross_irrigation_mm?: number;
+            irrigation_interval_days?: number;
+            recommendation?: string;
+            net_irrigation_mm?: number;
+            effective_rainfall_mm?: number;
+          };
+        };
+        weather_data?: {
+          temp_min?: number;
+          temp_max?: number;
+          rh_mean?: number;
+          wind_speed?: number;
+          solar_radiation?: number;
+        };
+        soil_data?: {
+          soil_type?: string;
+          moisture?: number;
+          rainfall?: number;
+        };
+      }
+    >
+  >(new Map());
+  const [waterData, setWaterData] = useState<{
+    crop_type?: string;
+    schedule?: {
+      irrigation?: {
+        gross_irrigation_mm?: number;
+        irrigation_interval_days?: number;
+        recommendation?: string;
+        net_irrigation_mm?: number;
+        effective_rainfall_mm?: number;
+      };
+    };
+    weather_data?: {
+      temp_min?: number;
+      temp_max?: number;
+      rh_mean?: number;
+      wind_speed?: number;
+      solar_radiation?: number;
+    };
+    soil_data?: {
+      soil_type?: string;
+      moisture?: number;
+      rainfall?: number;
+    };
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [cropType, setCropType] = useState("wheat");
-  // Use growth stage values that match backend expectations: 'initial', 'mid', 'late'
-  const [growthStage, setGrowthStage] = useState("mid");
 
   const handleLogout = () => {
     logout();
     navigate("/");
   };
 
-  const fetchData = React.useCallback(async () => {
-    if (!location) return;
-    setLoading(true);
-    setError("");
-    try {
-      const result = await api.water.calculate({
-        weather_data: { temp: 28, humidity: 65 },
-        soil_data: { texture: "loam" },
-        crop_type: cropType,
-        growth_stage: growthStage,
-      });
-      setData(result);
-    } catch (err) {
-      console.error("Water API error:", err);
-      // Narrow the error to a typed shape instead of `any`
-      const e = err as { status?: number } | undefined;
-      if (e && e.status === 0) {
-        setError(
-          `Cannot reach Water service at ${API_BASE.water}. Ensure the Water backend is running.`
-        );
-      } else if (err instanceof Error) {
-        setError(
-          err.message ||
-            "Failed to fetch water management data. Please check backend connection."
-        );
-      } else {
-        setError(
-          "Failed to fetch water management data. Please check backend connection."
-        );
-      }
-      setData(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [location, cropType, growthStage]);
-
+  // Fetch crop recommendations first
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    const fetchCrops = async () => {
+      if (!location?.lat || !location?.lng) return;
 
-  if (!location) return <ErrorMessage message="Set location first" />;
-  if (loading) return <LoadingSpinner />;
+      setLoading(true);
+      setError("");
 
-  // normalize water response fields: use top-level aliases if present, otherwise fall back to nested schedule
-  let et0 = 0,
-    etc = 0,
-    irrigationReq = 0,
-    irrigationScheduleDays = 0,
-    waterStressIndex = 0,
-    recommendationStr = "";
+      try {
+        const cropsRes = await api.crops.recommend(location.lat, location.lng);
+        const topCrops = (
+          (cropsRes.crops && cropsRes.crops.length
+            ? cropsRes.crops
+            : cropsRes.recommendations) as Crop[]
+        ).slice(0, 3);
+        setCropsData(topCrops);
+      } catch (err) {
+        console.error("Crops API error:", err);
+        setError("Failed to fetch crop recommendations.");
+      }
+    };
 
-  if (data) {
-    et0 = data.et0_mm_day ?? data.schedule?.et0_mm_day ?? 0;
-    etc = data.etc_mm_day ?? data.schedule?.etc_mm_day ?? 0;
-    irrigationReq =
-      data.irrigation_requirement_mm ??
-      data.schedule?.irrigation?.gross_irrigation_mm ??
-      0;
-    irrigationScheduleDays =
-      data.irrigation_schedule_days ??
-      data.schedule?.schedule?.irrigation_schedule_days ??
-      0;
-    waterStressIndex =
-      data.water_stress_index ??
-      data.schedule?.schedule?.water_stress_index ??
-      0;
-    recommendationStr =
-      data.recommendation ?? data.schedule?.schedule?.recommendation ?? "";
+    fetchCrops();
+  }, [location?.lat, location?.lng]);
+
+  // Fetch irrigation analysis for each recommended crop
+  useEffect(() => {
+    const fetchWaterAnalysis = async () => {
+      if (!location?.lat || !location?.lng || cropsData.length === 0) return;
+
+      setLoading(true);
+      setError("");
+
+      try {
+        const analysisMap = new Map<
+          string,
+          {
+            crop_type?: string;
+            schedule?: {
+              irrigation?: {
+                gross_irrigation_mm?: number;
+                irrigation_interval_days?: number;
+                recommendation?: string;
+              };
+            };
+            weather_data?: {
+              temp_min?: number;
+              temp_max?: number;
+              rh_mean?: number;
+              wind_speed?: number;
+              solar_radiation?: number;
+            };
+            soil_data?: {
+              soil_type?: string;
+              moisture?: number;
+              rainfall?: number;
+            };
+          }
+        >();
+
+        for (const crop of cropsData) {
+          const res = await api.water.calculate(
+            location.lat,
+            location.lng,
+            crop.crop,
+            "initial"
+          );
+          analysisMap.set(crop.crop, res);
+        }
+
+        setWaterAnalysis(analysisMap);
+        // Set waterData to first crop analysis for detailed view
+        const firstCropData = analysisMap.get(cropsData[0].crop);
+        if (firstCropData) {
+          setWaterData(firstCropData);
+        }
+      } catch (err) {
+        console.error("Water API error:", err);
+        setError("Failed to fetch irrigation analysis.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (cropsData.length > 0) {
+      fetchWaterAnalysis();
+    }
+  }, [location?.lat, location?.lng, cropsData]);
+
+  if (!location?.lat || !location?.lng) {
+    return <ErrorMessage message="Set location first" />;
   }
 
-  return (
-    <div className="min-h-screen bg-linear-to-br from-green-100 to-amber-100">
-      <Navbar onLogout={handleLogout} />
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold mb-6">Water Management</h1>
+  const getIrrigationColor = (index: number) => {
+    const colors = [
+      "bg-gradient-to-br from-green-100 to-emerald-100 border-green-400",
+      "bg-gradient-to-br from-emerald-100 to-cyan-100 border-emerald-400",
+      "bg-gradient-to-br from-cyan-100 to-amber-100 border-cyan-400",
+    ];
+    return colors[index] || colors[0];
+  };
 
+  return (
+    <div className="min-h-screen bg-linear-to-br from-blue-50 to-cyan-50">
+      <Navbar onLogout={handleLogout} />
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <h1 className="text-3xl font-bold text-blue-700 mb-3">
+          💧 Irrigation Recommendations
+        </h1>
+        <p className="text-gray-600 mb-6">
+          Smart water management based on crop type, soil & weather conditions.
+        </p>
+
+        {loading && (
+          <LoadingSpinner message="💧 Calculating irrigation requirements..." />
+        )}
         {error && <ErrorMessage message={error} />}
 
-        {/* Crop Selection */}
-        <div className="bg-white p-6 rounded-lg shadow mb-6">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Crop Type
-              </label>
-              <select
-                value={cropType}
-                onChange={(e) => setCropType(e.target.value)}
-                className="w-full p-2 border rounded"
-              >
-                <option value="wheat">Wheat</option>
-                <option value="rice">Rice</option>
-                <option value="corn">Corn</option>
-                <option value="cotton">Cotton</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Growth Stage
-              </label>
-              <select
-                value={growthStage}
-                onChange={(e) => setGrowthStage(e.target.value)}
-                className="w-full p-2 border rounded"
-              >
-                <option value="initial">Initial</option>
-                <option value="mid">Vegetative / Mid</option>
-                <option value="late">Flowering / Late</option>
-              </select>
-            </div>
-          </div>
-        </div>
+        {!loading && !error && cropsData.length > 0 && (
+          <div className="space-y-8">
+            {/* Top 3 Crops with Irrigation Analysis */}
+            <div className="grid md:grid-cols-3 gap-6">
+              {cropsData.map((crop, idx) => {
+                const analysis = waterAnalysis.get(crop.crop);
+                return (
+                  <div
+                    key={crop.crop}
+                    className={`rounded-xl shadow-lg p-6 border-2 ${getIrrigationColor(
+                      idx
+                    )}`}
+                  >
+                    {/* Header with Crop Name and Rank */}
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-2xl font-bold text-gray-800">
+                        {crop.crop}
+                      </h2>
+                      <span className="text-3xl">
+                        {idx === 0 ? "🥇" : idx === 1 ? "🥈" : "🥉"}
+                      </span>
+                    </div>
 
-        {data && (
-          <div className="space-y-6">
-            {/* ET Values */}
-            <div className="grid md:grid-cols-3 gap-4">
-              <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
-                <p className="text-sm text-gray-600 mb-1">ET₀ (Reference)</p>
-                <p className="text-3xl font-bold text-blue-600">
-                  {et0.toFixed(1)}
-                </p>
-                <p className="text-sm text-gray-600">mm/day</p>
-              </div>
-              <div className="bg-green-50 p-6 rounded-lg border border-green-200">
-                <p className="text-sm text-gray-600 mb-1">ETc (Crop)</p>
-                <p className="text-3xl font-bold text-green-600">
-                  {etc.toFixed(1)}
-                </p>
-                <p className="text-sm text-gray-600">mm/day</p>
-              </div>
-              <div className="bg-purple-50 p-6 rounded-lg border border-purple-200">
-                <p className="text-sm text-gray-600 mb-1">Irrigation Need</p>
-                <p className="text-3xl font-bold text-purple-600">
-                  {irrigationReq.toFixed(1)}
-                </p>
-                <p className="text-sm text-gray-600">mm</p>
-              </div>
-            </div>
+                    {/* Suitability Score */}
+                    <div className="mb-4">
+                      <p className="text-sm text-gray-600 mb-1">
+                        Suitability Score
+                      </p>
+                      <p className="text-3xl font-bold text-blue-600">
+                        {(crop.score * 100).toFixed(0)}%
+                      </p>
+                    </div>
 
-            {/* Schedule */}
-            <div className="bg-white p-6 rounded-lg shadow border">
-              <h2 className="text-xl font-bold mb-4">Irrigation Schedule</h2>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-600 text-sm">Next Irrigation</p>
-                  <p className="text-3xl font-bold text-blue-600">
-                    {irrigationScheduleDays.toFixed(1)} days
-                  </p>
-                </div>
-                <div className="text-6xl">💧</div>
-              </div>
+                    {/* Irrigation Requirement */}
+                    {analysis && (
+                      <div className="bg-white/60 backdrop-blur-sm rounded-lg p-4 space-y-3">
+                        <div>
+                          <p className="text-xs text-gray-600 mb-1">
+                            Irrigation Needed
+                          </p>
+                          <p className="text-2xl font-bold text-blue-700">
+                            {analysis.schedule?.irrigation?.gross_irrigation_mm?.toFixed(
+                              1
+                            ) || 0}
+                            <span className="text-sm ml-1">mm</span>
+                          </p>
+                        </div>
+
+                        <div className="pt-2 border-t border-white/30">
+                          <p className="text-xs text-gray-600 mb-1">Interval</p>
+                          <p className="text-lg font-semibold text-emerald-700">
+                            Every{" "}
+                            {analysis.schedule?.irrigation?.irrigation_interval_days?.toFixed(
+                              0
+                            ) || 0}{" "}
+                            days
+                          </p>
+                        </div>
+
+                        {analysis.schedule?.irrigation?.recommendation && (
+                          <div className="pt-2 border-t border-white/30">
+                            <p className="text-xs font-semibold text-amber-700">
+                              💡 {analysis.schedule.irrigation.recommendation}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Water Stress */}
-            <div className="bg-white p-6 rounded-lg shadow border">
-              <h2 className="text-xl font-bold mb-4">Water Stress Index</h2>
-              <p className="text-4xl font-bold text-orange-600 mb-2">
-                {(waterStressIndex * 100).toFixed(0)}%
-              </p>
-              <div className="w-full bg-gray-200 rounded-full h-4">
-                <div
-                  className="bg-orange-600 h-4 rounded-full"
-                  style={{ width: `${waterStressIndex * 100}%` }}
-                />
-              </div>
-              <p className="text-sm text-gray-600 mt-2">
-                {waterStressIndex < 0.3
-                  ? "Low Stress"
-                  : waterStressIndex < 0.6
-                  ? "Moderate Stress"
-                  : "High Stress"}
-              </p>
-            </div>
+            {/* Detailed Analysis Section */}
+            {cropsData.length > 0 && waterData && (
+              <div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-6">
+                  📊 Detailed Analysis: {cropsData[0].crop}
+                </h3>
+                {/* Main Irrigation Recommendation */}
+                <div className="bg-white shadow-lg rounded-xl p-6">
+                  <h2 className="text-blue-700 text-xl font-semibold mb-4">
+                    🌾 Crop: {waterData?.crop_type || "Wheat"}
+                  </h2>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {/* Irrigation Amount */}
+                    <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                      <p className="text-gray-600 text-sm mb-2">
+                        Recommended Irrigation
+                      </p>
+                      <p className="text-4xl font-bold text-blue-600">
+                        {waterData.schedule?.irrigation?.gross_irrigation_mm?.toFixed(
+                          1
+                        ) || 0}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">mm</p>
+                    </div>
 
-            {/* Recommendation */}
-            <div className="bg-green-50 border border-green-200 p-6 rounded-lg">
-              <h3 className="font-semibold text-green-900 mb-2">
-                Recommendation
-              </h3>
-              <p className="text-green-800">{recommendationStr}</p>
-            </div>
+                    {/* Irrigation Interval */}
+                    <div className="bg-cyan-50 p-6 rounded-lg border border-cyan-200">
+                      <p className="text-gray-600 text-sm mb-2">
+                        Irrigation Interval
+                      </p>
+                      <p className="text-4xl font-bold text-cyan-600">
+                        {waterData.schedule?.irrigation?.irrigation_interval_days?.toFixed(
+                          0
+                        ) || 0}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">days</p>
+                    </div>
+                  </div>
 
-            {/* Educational Insights - Always visible */}
-            <div className="bg-linear-to-r from-cyan-50 to-blue-50 border border-cyan-200 rounded-xl p-6 shadow-lg">
-              <h3 className="text-xl font-bold text-cyan-800 mb-4">
-                💧 Understanding Water Management Calculations
-              </h3>
-              <p className="text-cyan-700 leading-relaxed mb-4">
-                Water management in agriculture relies on precise
-                evapotranspiration calculations and soil moisture monitoring to
-                optimize irrigation efficiency. The system uses advanced
-                meteorological data and crop physiology models to determine
-                exact water requirements, preventing both water waste and crop
-                stress.
-              </p>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4">
-                  <h4 className="font-semibold text-cyan-800 mb-2">
-                    🌡️ Evapotranspiration (ET) Calculations
-                  </h4>
-                  <p className="text-sm text-gray-700">
-                    <strong>
-                      ET₀ = (0.408Δ(Rn-G) +
-                      γ(900/(T+273))u₂(es-ea))/(Δ+γ(1+0.34u₂))
-                    </strong>
-                    <br />
-                    Reference ET calculated using Penman-Monteith equation. ETc
-                    (Crop ET) = ET₀ × Kc, where Kc varies by crop type and
-                    growth stage (0.3-1.2).
-                  </p>
+                  {/* Recommendation Message */}
+                  {waterData.schedule?.irrigation?.recommendation && (
+                    <div className="bg-green-50 border border-green-300 rounded-lg p-4 mt-6">
+                      <p className="text-green-800 font-semibold">
+                        💡 {waterData.schedule.irrigation.recommendation}
+                      </p>
+                    </div>
+                  )}
                 </div>
-                <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4">
-                  <h4 className="font-semibold text-cyan-800 mb-2">
-                    💧 Irrigation Requirements
-                  </h4>
-                  <p className="text-sm text-gray-700">
-                    <strong>
-                      Irrigation Need = ETc - Effective Rainfall + Leaching
-                    </strong>
-                    <br />
-                    Considers soil water holding capacity, root depth, and
-                    salinity leaching requirements. Prevents over/under-watering
-                    through precise scheduling.
-                  </p>
+
+                {/* Weather & Soil Data */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Weather Info */}
+                  {waterData.weather_data && (
+                    <div className="bg-white shadow-lg rounded-xl p-6">
+                      <h3 className="text-lg font-semibold text-orange-700 mb-4">
+                        🌡️ Current Weather
+                      </h3>
+                      <div className="space-y-2 text-sm">
+                        <p>
+                          <strong>Temperature:</strong>{" "}
+                          {waterData.weather_data.temp_min?.toFixed(1)}°C -{" "}
+                          {waterData.weather_data.temp_max?.toFixed(1)}°C
+                        </p>
+                        <p>
+                          <strong>Humidity:</strong>{" "}
+                          {waterData.weather_data.rh_mean?.toFixed(0)}%
+                        </p>
+                        <p>
+                          <strong>Wind Speed:</strong>{" "}
+                          {waterData.weather_data.wind_speed?.toFixed(1)} m/s
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Soil Info */}
+                  {waterData.soil_data && (
+                    <div className="bg-white shadow-lg rounded-xl p-6">
+                      <h3 className="text-lg font-semibold text-amber-700 mb-4">
+                        🌱 Soil Properties
+                      </h3>
+                      <div className="space-y-2 text-sm">
+                        <p>
+                          <strong>Soil Type:</strong>{" "}
+                          {waterData.soil_data?.soil_type || "N/A"}
+                        </p>
+                        <p>
+                          <strong>Moisture:</strong>{" "}
+                          {waterData.soil_data?.moisture
+                            ? (waterData.soil_data.moisture * 100)?.toFixed(0)
+                            : 0}
+                          %
+                        </p>
+                        <p>
+                          <strong>Rainfall (last 1 hour):</strong>{" "}
+                          {waterData.soil_data?.rainfall || 0} mm
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4">
-                  <h4 className="font-semibold text-cyan-800 mb-2">
-                    📊 Water Stress Index
-                  </h4>
-                  <p className="text-sm text-gray-700">
-                    <strong>WSI = 1 - (Actual ET / Potential ET)</strong>
-                    <br />
-                    WSI {">"} 0.3 indicates stress. Integrates soil moisture
-                    sensors, canopy temperature, and spectral reflectance for
-                    real-time assessment.
-                  </p>
-                </div>
-                <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4">
-                  <h4 className="font-semibold text-cyan-800 mb-2">
-                    📅 Irrigation Scheduling
-                  </h4>
-                  <p className="text-sm text-gray-700">
-                    Based on soil moisture depletion thresholds (typically 50%
-                    of available water capacity). Considers crop sensitivity,
-                    weather forecasts, and irrigation efficiency to optimize
-                    timing and amounts.
+
+                {/* Educational Info */}
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-blue-800 mb-3">
+                    📘 How Irrigation is Calculated
+                  </h3>
+                  <ul className="text-gray-700 space-y-2 text-sm">
+                    <li>
+                      <strong>ET₀ (Reference ET):</strong> Based on temperature,
+                      humidity, wind & solar radiation
+                    </li>
+                    <li>
+                      <strong>ETc (Crop ET):</strong> ET₀ × Crop Coefficient
+                      (depends on crop type & growth stage)
+                    </li>
+                    <li>
+                      <strong>Net Irrigation:</strong> ETc - Effective Rainfall
+                    </li>
+                    <li>
+                      <strong>Gross Irrigation:</strong> Net Irrigation /
+                      Application Efficiency
+                    </li>
+                  </ul>
+                  <p className="text-gray-600 text-xs mt-4">
+                    This estimation updates with real weather data and adapts to
+                    seasonal changes.
                   </p>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
-};
+}

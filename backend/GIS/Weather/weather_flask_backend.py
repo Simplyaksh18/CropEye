@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 
 # Load .env from the root of the 'backend' directory
 backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-dotenv_path = os.path.join(backend_dir, '.env')
+dotenv_path = os.path.join(backend_dir, 'file.env')
 load_dotenv(dotenv_path=dotenv_path)
 
 # Import weather data collector

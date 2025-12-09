@@ -2,11 +2,12 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useLocation } from "../hooks/useLocation";
-import { api } from "../services/api";
+import api from "../services/api";
 import type { CropResponse } from "../types";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
 import Navbar from "../components/Navbar";
+import CropInsightDetails from "../components/CropInsightDetails";
 
 export const CropsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -22,15 +23,11 @@ export const CropsPage: React.FC = () => {
   };
 
   const fetchData = useCallback(async () => {
-    if (!location) return;
+    if (!location || location.lat === null || location.lng === null) return;
     setLoading(true);
     setError("");
     try {
-      // Use integrated endpoint so backend fetches NDVI, soil and weather itself
-      const result = await api.crops.recommendIntegrated(
-        location.lat,
-        location.lng
-      );
+      const result = await api.crops.recommend(location.lat, location.lng);
       setData(result);
     } catch (error) {
       console.error("Crops API error:", error);
@@ -47,24 +44,30 @@ export const CropsPage: React.FC = () => {
     fetchData();
   }, [location, fetchData]);
 
-  if (!location) return <ErrorMessage message="Set location first" />;
-  if (loading) return <LoadingSpinner />;
-
   const getScoreColor = (score: number) => {
     if (score >= 0.8) return "bg-green-100 border-green-500 text-green-800";
     if (score >= 0.6) return "bg-yellow-100 border-yellow-500 text-yellow-800";
     return "bg-red-100 border-red-500 text-red-800";
   };
 
+  if (!location) return <ErrorMessage message="Set location first" />;
+
   return (
-    <div className="min-h-screen bg-linear-to-br from-green-100 to-amber-100">
+    <div className="min-h-screen bg-linear-to-br from-lime-100 to-yellow-100">
       <Navbar onLogout={handleLogout} />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold mb-6">Crop Recommendations</h1>
+        <h1 className="text-3xl font-bold text-blue-700 mb-3">
+          🌾 Crop Recommendations
+        </h1>
+        <p className="text-gray-600 mb-6">
+          AI-powered crop suggestions tailored to your soil and climate
+          conditions.
+        </p>
 
+        {loading && <LoadingSpinner message="Analyzing optimal crops..." />}
         {error && <ErrorMessage message={error} />}
 
-        {data && (
+        {!loading && !error && data && (
           <div className="space-y-6">
             {/* Top 3 Recommendations */}
             <div className="grid md:grid-cols-3 gap-4">
@@ -110,6 +113,24 @@ export const CropsPage: React.FC = () => {
                 ))}
             </div>
 
+            {/* Why Top Crop is Recommended */}
+            {data &&
+              data.recommendations &&
+              data.recommendations.length > 0 &&
+              data.input_parameters && (
+                <div className="bg-white p-6 rounded-lg shadow border">
+                  <h2 className="text-xl font-bold mb-4">
+                    Why {data.recommendations[0].crop} is Recommended
+                  </h2>
+                  <CropInsightDetails
+                    ph={data.input_parameters.ph ?? 6.5}
+                    ndvi={data.input_parameters.ndvi ?? 0.5}
+                    rainfall={data.input_parameters.rainfall ?? 700}
+                    temp={data.input_parameters.temp_mean ?? 25}
+                  />
+                </div>
+              )}
+
             {/* All Crops Table */}
             <div className="bg-white p-6 rounded-lg shadow border">
               <h2 className="text-xl font-bold mb-4">
@@ -118,13 +139,16 @@ export const CropsPage: React.FC = () => {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b-2 border-gray-200">
-                      <th className="text-left p-3">Crop</th>
-                      <th className="text-center p-3">Overall Score</th>
-                      <th className="text-center p-3">pH</th>
-                      <th className="text-center p-3">Rainfall</th>
-                      <th className="text-center p-3">Temp</th>
-                      <th className="text-center p-3">NDVI</th>
+                    <tr className="border-b border-gray-200 bg-gray-50">
+                      <th className="p-3 text-left font-semibold">Crop</th>
+                      <th className="text-center p-3 font-semibold">Score</th>
+                      <th className="text-center p-3 font-semibold">pH</th>
+                      <th className="text-center p-3 font-semibold">
+                        Rainfall Requirements
+                      </th>
+                      <th className="text-center p-3 font-semibold">
+                        Temperature
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -152,16 +176,16 @@ export const CropsPage: React.FC = () => {
                           </span>
                         </td>
                         <td className="text-center p-3">
-                          {(crop.components.ph * 100).toFixed(0)}%
+                          {crop.ph_requirements?.optimal_range || "N/A"}
                         </td>
+
                         <td className="text-center p-3">
-                          {(crop.components.rainfall * 100).toFixed(0)}%
+                          {crop.rainfall_requirements?.optimal_range ||
+                            "700-1200 mm/year"}
                         </td>
+
                         <td className="text-center p-3">
-                          {(crop.components.temp * 100).toFixed(0)}%
-                        </td>
-                        <td className="text-center p-3">
-                          {(crop.components.ndvi * 100).toFixed(0)}%
+                          {crop.temp_requirements?.optimal_range || "N/A"}
                         </td>
                       </tr>
                     ))}
@@ -272,3 +296,4 @@ export const CropsPage: React.FC = () => {
     </div>
   );
 };
+export default CropsPage;

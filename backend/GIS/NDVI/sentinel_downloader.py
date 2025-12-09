@@ -49,6 +49,13 @@ class CopernicusDataDownloader:
         
         if self.force_simulated:
             logger.warning("⚠️  FORCE_SIMULATED mode enabled - will skip real API calls")
+
+    def _rng_from_location(self, latitude, longitude, extra: str = ""):
+        """Create a deterministic RNG based on location (and optional extra key)."""
+        seed_input = f"{latitude:.4f},{longitude:.4f}:{extra}"
+        # Use a stable hash to avoid platform differences
+        seed = abs(hash(seed_input)) % (2**32)
+        return np.random.default_rng(seed)
     
     def _get_access_token(self):
         """Get OAuth2 access token from Copernicus"""
@@ -419,8 +426,9 @@ class CopernicusDataDownloader:
             if red_band is None or nir_band is None:
                 logger.info("📊 Simulating band extraction from product metadata...")
                 cloud_factor = (100 - cloud_cover) / 100.0
-                red_band = 0.1 + (0.15 * (1 - cloud_factor)) + np.random.normal(0, 0.02)
-                nir_band = 0.3 + (0.2 * cloud_factor) + np.random.normal(0, 0.03)
+                rng = self._rng_from_location(latitude, longitude, acquisition_date or "")
+                red_band = 0.1 + (0.15 * (1 - cloud_factor)) + rng.normal(0, 0.02)
+                nir_band = 0.3 + (0.2 * cloud_factor) + rng.normal(0, 0.03)
                 red_band = max(0.05, min(0.3, red_band))
                 nir_band = max(0.2, min(0.5, nir_band))
 
@@ -485,8 +493,8 @@ class CopernicusDataDownloader:
         elif abs(latitude) < 50:
             base_ndvi += 0.10  # Temperate
         
-        # Add some randomness
-        ndvi_variation = np.random.normal(0, 0.08)
+        rng = self._rng_from_location(latitude, longitude)
+        ndvi_variation = rng.normal(0, 0.08)
         synthetic_ndvi = base_ndvi + ndvi_variation
         
         # Clamp to valid range

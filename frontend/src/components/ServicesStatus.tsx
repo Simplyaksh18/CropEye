@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { API_BASE } from "../services/api";
+import API_BASE from "../services/api";
 
 type ServiceKey = "ndvi" | "soil" | "weather" | "crops" | "water" | "pests";
 

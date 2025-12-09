@@ -26,6 +26,21 @@ export interface Crop {
   crop: string;
   score: number;
   components: Record<string, number>;
+  rainfall_requirements?: {
+    min_mm: number;
+    max_mm: number;
+    optimal_range: string;
+  };
+  ph_requirements?: {
+    min: number;
+    max: number;
+    optimal_range: string;
+  };
+  temp_requirements?: {
+    min_c: number;
+    max_c: number;
+    optimal_range: string;
+  };
 }
 
 export interface NDVIResponse {
@@ -51,6 +66,7 @@ export interface PestResponse {
   pests: Pest[];
   diseases: Disease[];
   total_threats: number;
+  climate_message?: string;
 }
 
 export interface Pest {
@@ -70,11 +86,43 @@ export interface Disease {
 }
 
 export interface SoilResponse {
-  ph: number;
-  nitrogen: number;
-  phosphorus: number;
-  potassium: number;
-  texture: string;
+  soil_properties: {
+    ph: {
+      value: number;
+      unit: string;
+      classification: string;
+      source?: string;
+    };
+    nitrogen?: {
+      value: number;
+      unit: string;
+      classification: string;
+      source?: string;
+    };
+    phosphorus?: {
+      value: number;
+      unit: string;
+      classification: string;
+      source?: string;
+    };
+    potassium?: {
+      value: number;
+      unit: string;
+      classification: string;
+      source?: string;
+    };
+    texture: {
+      value: string;
+      source?: string;
+      description?: string;
+    };
+    organic_carbon?: {
+      value: number;
+      unit: string;
+      classification: string;
+      source?: string;
+    };
+  };
   recommendations: string[];
   confidence: number;
   data_source: string;

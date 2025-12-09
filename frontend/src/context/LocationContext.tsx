@@ -1,91 +1,67 @@
-import React, { createContext, useState, useEffect } from "react";
-import type { ReactNode } from "react";
-import type { Location, FarmingLand } from "../types";
+import React, { createContext, useContext, useState } from "react";
 
-interface LocationContextType {
-  location: Location | null;
-  setLocation: (location: Location) => void;
-  farmingLand: FarmingLand | null;
-  setFarmingLand: (farmingLand: FarmingLand) => void;
-  presetLocations: Location[];
+interface Location {
+  lat: number | null;
+  lng: number | null;
+  name?: string;
 }
 
-export const LocationContext = createContext<LocationContextType | undefined>(
+type SetLocationFn = (
+  ...args: [number, number] | [{ lat: number; lng: number; name?: string }]
+) => void;
+
+interface LocationContextType {
+  location: Location;
+  // Accept either (lat,lng) or an object {lat,lng}
+  setLocation: SetLocationFn;
+  bestCrop: string | null;
+  setBestCrop: (crop: string | null) => void;
+}
+
+const LocationContext = createContext<LocationContextType | undefined>(
   undefined
 );
 
-export const LocationProvider: React.FC<{ children: ReactNode }> = ({
+export const LocationProvider = ({
   children,
+}: {
+  children: React.ReactNode;
 }) => {
-  const [location, setLocation] = useState<Location | null>(() => {
-    try {
-      const raw = localStorage.getItem("cropEye.location");
-      return raw ? (JSON.parse(raw) as Location) : null;
-    } catch (e) {
-      return null;
-    }
+  const [location, setLocationState] = useState<Location>({
+    lat: null,
+    lng: null,
   });
+  const [bestCrop, setBestCrop] = useState<string | null>(null);
 
-  const [farmingLand, setFarmingLand] = useState<FarmingLand | null>(() => {
-    try {
-      const raw = localStorage.getItem("cropEye.farmingLand");
-      return raw ? (JSON.parse(raw) as FarmingLand) : null;
-    } catch (e) {
-      return null;
+  const setLocation = (
+    a: number | { lat: number; lng: number; name?: string },
+    b?: number
+  ) => {
+    if (typeof a === "number" && typeof b === "number") {
+      setLocationState({ lat: a, lng: b });
+    } else if (typeof a === "object" && a !== null) {
+      setLocationState({ lat: a.lat, lng: a.lng, name: a.name });
+    } else {
+      // ignore invalid calls
+      return;
     }
-  });
-
-  // Preset fallback locations for GPS input
-  const presetLocations: Location[] = [
-    { lat: 28.6139, lng: 77.209, name: "Delhi Farm Sample" },
-    { lat: 19.076, lng: 72.8777, name: "Mumbai Farm Sample" },
-    { lat: 12.9716, lng: 77.5946, name: "Bangalore Farm Sample" },
-    { lat: 13.0827, lng: 80.2707, name: "Chennai Farm Sample" },
-  ];
-
-  // persist changes
-  useEffect(() => {
-    try {
-      if (location) {
-        localStorage.setItem("cropEye.location", JSON.stringify(location));
-      } else {
-        localStorage.removeItem("cropEye.location");
-      }
-    } catch (e) {
-      // ignore storage errors
-    }
-  }, [location]);
-
-  useEffect(() => {
-    try {
-      if (farmingLand) {
-        localStorage.setItem(
-          "cropEye.farmingLand",
-          JSON.stringify(farmingLand)
-        );
-      } else {
-        localStorage.removeItem("cropEye.farmingLand");
-      }
-    } catch (e) {
-      // ignore
-    }
-  }, [farmingLand]);
+    setBestCrop(null); // reset crop when location changes
+  };
 
   return (
     <LocationContext.Provider
-      value={{
-        location,
-        setLocation,
-        farmingLand,
-        setFarmingLand,
-        presetLocations,
-      }}
+      value={{ location, setLocation, bestCrop, setBestCrop }}
     >
       {children}
     </LocationContext.Provider>
   );
 };
 
-// Persist location and farmingLand to localStorage when they change
-// Doing this after the component definition to avoid hooks misuse; use a small effect inside the provider is preferable,
-// but to keep changes minimal we add the effect above inside the provider scope instead.
+export const useLocation = () => {
+  const context = useContext(LocationContext);
+  if (!context)
+    throw new Error("useLocation must be used within LocationProvider");
+  return context;
+};
+
+export { LocationContext };

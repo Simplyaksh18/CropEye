@@ -1,106 +1,92 @@
 // src/services/api.ts
 
-import { apiClient } from "./apiClient";
-import type {
-  NDVIResponse,
-  SoilResponse,
-  WeatherResponse,
-  WaterResponse,
-  CropResponse,
-  PestResponse,
-} from "../types";
-
-export const API_BASE = {
-  ndvi: import.meta.env.VITE_NDVI_API_URL || "/api/ndvi",
-  soil: import.meta.env.VITE_SOIL_API_URL || "/api/soil",
-  weather: import.meta.env.VITE_WEATHER_API_URL || "/api/weather",
-  // backend uses singular 'crop' namespace
-  crops: import.meta.env.VITE_CROPS_API_URL || "/api/crop",
-  water: import.meta.env.VITE_WATER_API_URL || "/api/water",
-  // backend uses singular 'pest' namespace
-  pests: import.meta.env.VITE_PESTS_API_URL || "/api/pest",
+const BASE = {
+  crops: "http://localhost:5004",
+  ndvi: "http://localhost:5001",
+  soil: "http://localhost:5002",
+  weather: "http://localhost:5003",
+  water: "http://localhost:5005",
+  pests: "http://localhost:5006",
 };
 
-export const api = {
+const req = async (url: string, options?: RequestInit) => {
+  const res = await fetch(url, options);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+};
+
+const api = {
+  crops: {
+    recommend: (lat: number, lng: number) =>
+      req(`${BASE.crops}/api/crop/recommend/integrated`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ latitude: lat, longitude: lng }),
+      }),
+  },
+
   ndvi: {
     analyze: (lat: number, lng: number) =>
-      apiClient<NDVIResponse>(`${API_BASE.ndvi}/analyze`, {
+      req(`${BASE.ndvi}/api/ndvi/analyze`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ latitude: lat, longitude: lng }),
       }),
   },
 
   soil: {
-    analyze: (lat: number, lng: number, includeNDVI = true) =>
-      apiClient<SoilResponse>(`${API_BASE.soil}/analyze`, {
+    analyze: (
+      lat: number,
+      lng: number,
+      options?: {
+        coordinate_source?: string;
+        include_ndvi?: boolean;
+        analysis_depth?: string;
+      }
+    ) =>
+      req(`${BASE.soil}/api/soil/analyze`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           latitude: lat,
           longitude: lng,
-          coordinate_source: "user",
-          include_ndvi: includeNDVI,
+          coordinate_source: options?.coordinate_source || "manual",
+          include_ndvi: options?.include_ndvi ?? true,
+          analysis_depth: options?.analysis_depth || "comprehensive",
         }),
       }),
   },
 
   weather: {
     current: (lat: number, lng: number) =>
-      apiClient<WeatherResponse>(
-        `${API_BASE.weather}/current?lat=${lat}&lng=${lng}`
-      ),
-
-    agricultural: (lat: number, lng: number) =>
-      apiClient<WeatherResponse>(
-        `${API_BASE.weather}/agricultural?lat=${lat}&lng=${lng}`
-      ),
+      req(`${BASE.weather}/api/weather/current?lat=${lat}&lng=${lng}`),
   },
 
   water: {
-    calculate: (data: {
-      weather_data: { temp: number; humidity: number };
-      soil_data: { texture: string };
-      crop_type: string;
-      growth_stage: string;
-    }) =>
-      apiClient<WaterResponse>(`${API_BASE.water}/irrigation/calculate`, {
+    calculate: (lat: number, lng: number, crop: string, stage: string) =>
+      req(`${BASE.water}/api/water/irrigation/integrated`, {
         method: "POST",
-        body: JSON.stringify(data),
-      }),
-  },
-
-  crops: {
-    // Integrated: ask backend to fetch soil/weather/ndvi and compute recommendations
-    recommendIntegrated: (lat: number, lng: number) =>
-      apiClient<CropResponse>(`${API_BASE.crops}/recommend/integrated`, {
-        method: "POST",
-        body: JSON.stringify({ latitude: lat, longitude: lng }),
-      }),
-
-    // Legacy/simple: supply all parameters from client (keeps compatibility)
-    recommend: (data: {
-      latitude: number;
-      longitude: number;
-      ph: number;
-      rainfall: number;
-      temp_mean: number;
-      ndvi: number;
-    }) =>
-      apiClient<CropResponse>(`${API_BASE.crops}/recommend`, {
-        method: "POST",
-        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          latitude: lat,
+          longitude: lng,
+          crop_type: crop,
+          growth_stage: stage,
+        }),
       }),
   },
 
   pests: {
-    assess: (data: {
-      temp: number;
-      humidity: number;
-      crop_type: string;
-      additional_factors?: Record<string, unknown>;
-    }) =>
-      apiClient<PestResponse>(`${API_BASE.pests}/threats/comprehensive`, {
+    assess: (lat: number, lng: number, crop: string) =>
+      req(`${BASE.pests}/api/threats/integrated`, {
         method: "POST",
-        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          latitude: lat,
+          longitude: lng,
+          crop_type: crop,
+          additional_factors: {},
+        }),
       }),
   },
 };

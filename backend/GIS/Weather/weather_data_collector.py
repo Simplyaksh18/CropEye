@@ -684,7 +684,7 @@ if __name__ == "__main__":
     # Load .env file from the root of the 'backend' directory to get API keys
     from dotenv import load_dotenv
     backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-    load_dotenv(dotenv_path=os.path.join(backend_dir, '.env'))
+    load_dotenv(dotenv_path=os.path.join(backend_dir, 'file.env'))
     
     def validate_and_print(current_data: Dict, ground_truth: Dict, is_ip_loc: bool = False):
         """Helper function to print validation table."""

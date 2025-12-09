@@ -1,228 +1,318 @@
 // src/pages/NDVIPage.tsx
-
-import React, { useEffect, useState } from "react";
-import { LineChart, Activity } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 import { useLocation } from "../hooks/useLocation";
-import LocationInput from "../components/LocationInput";
-import ModuleCalculationCard from "../components/ModuleCalculationCard";
+import api from "../services/api";
 import LoadingSpinner from "../components/LoadingSpinner";
-import { api } from "../services/api";
+import ErrorMessage from "../components/ErrorMessage";
+import Navbar from "../components/Navbar";
 
-export const NDVIPage: React.FC = () => {
-  const { location, setLocation } = useLocation();
+export default function NDVIPage() {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+  const { location } = useLocation();
 
-  // allow flexible API response shape for NDVI analysis
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [analysisData, setAnalysisData] = useState<any | null>(null);
-  const [loading, setLoading] = useState(false);
+  interface NdviData {
+    ndvi: number;
+    red_band?: number;
+    nir_band?: number;
+    health_category?: string;
+    health_score?: number;
+    description?: string;
+    acquisition_date?: string;
+  }
+
+  interface NdviMetadata {
+    data_source?: string;
+    is_real_data?: boolean;
+    date?: string;
+    latitude?: number;
+    longitude?: number;
+  }
+
+  const [ndviData, setNdviData] = useState<NdviData | null>(null);
+  const [ndviMeta, setNdviMeta] = useState<NdviMetadata | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
 
   useEffect(() => {
-    let mounted = true;
-    const fetchAnalysis = async () => {
-      if (!location) {
-        setAnalysisData(null);
-        return;
-      }
+    const fetchNDVI = async () => {
+      if (!location.lat || !location.lng) return;
+
       setLoading(true);
+      setError("");
+
       try {
-        const resp = await api.ndvi.analyze(location.lat, location.lng);
-        if (mounted) setAnalysisData(resp);
+        const res = await api.ndvi.analyze(location.lat, location.lng);
+        setNdviData(res.data);
+        setNdviMeta(res.metadata ?? null);
       } catch {
-        if (mounted) setAnalysisData(null);
+        setError("Failed to fetch NDVI vegetation health data.");
       } finally {
-        if (mounted) setLoading(false);
+        setLoading(false);
       }
     };
 
-    fetchAnalysis();
-    return () => {
-      mounted = false;
-    };
-  }, [location]);
+    fetchNDVI();
+  }, [location.lat, location.lng]);
 
-  // Support multiple backend shapes:
-  // - aggregated report: analysisData.ndvi_report (rich object)
-  // - microservice flat response: { ndvi_value, health_status, vegetation_coverage, timestamp, trend }
-  const ndvi =
-    analysisData?.ndvi_report ||
-    (analysisData?.ndvi
-      ? {
-          latestValue:
-            typeof analysisData.ndvi.mean === "number" &&
-            Number.isFinite(analysisData.ndvi.mean)
-              ? analysisData.ndvi.mean
-              : null,
-          latestDate: analysisData.analysis_date,
-          status: analysisData.health_analysis?.status ?? "Unknown",
-          trend:
-            analysisData.trend_analysis?.summary ||
-            analysisData.trend_analysis?.trend ||
-            "No trend available",
-          change:
-            typeof analysisData.ndvi.mean === "number" &&
-            typeof analysisData.ndvi.median === "number"
-              ? Number(
-                  (analysisData.ndvi.mean - analysisData.ndvi.median).toFixed(3)
-                )
-              : null,
-          seasonalAverage:
-            typeof analysisData.ndvi.mean === "number" &&
-            Number.isFinite(analysisData.ndvi.mean)
-              ? analysisData.ndvi.mean
-              : null,
-          history: Array.isArray(analysisData.ndvi_history)
-            ? analysisData.ndvi_history
-            : [],
-        }
-      : analysisData && typeof analysisData.ndvi_value === "number"
-      ? {
-          // flat NDVI microservice response
-          latestValue: Number.isFinite(analysisData.ndvi_value)
-            ? analysisData.ndvi_value
-            : null,
-          latestDate:
-            analysisData.timestamp || analysisData.analysis_date || null,
-          status:
-            analysisData.health_status ?? analysisData.status ?? "Unknown",
-          trend: Array.isArray(analysisData.trend)
-            ? analysisData.trend
-            : analysisData.trend || "No trend available",
-          change: null,
-          seasonalAverage: Number.isFinite(analysisData.ndvi_value)
-            ? analysisData.ndvi_value
-            : null,
-          history: Array.isArray(analysisData.trend)
-            ? (analysisData.trend as { date?: string; value?: number }[]).map(
-                (t) => ({
-                  date: t.date,
-                  value: typeof t.value === "number" ? t.value : undefined,
-                })
-              )
-            : [],
-        }
-      : null);
+  const getScoreLabel = (value: number) => {
+    if (value >= 0.6) return { label: "High", color: "text-green-600" };
+    if (value >= 0.3) return { label: "Medium", color: "text-yellow-600" };
+    return { label: "Low", color: "text-red-600" };
+  };
 
-  const vegetationCover = Number.isFinite(analysisData?.vegetation_coverage)
-    ? analysisData!.vegetation_coverage
-    : Number.isFinite(analysisData?.vegetation_percentage)
-    ? analysisData!.vegetation_percentage
-    : null;
+  const ndviValue = ndviData?.ndvi ?? null;
+  const score = ndviValue !== null ? getScoreLabel(ndviValue) : null;
+  const fillPercent = ndviValue ? ndviValue * 100 : 0;
 
-  if (loading) {
-    return (
-      <div className="space-y-6 text-center py-8">
-        <LoadingSpinner />
-        <p className="text-gray-600 mt-2">Fetching NDVI analysis…</p>
-      </div>
-    );
-  }
+  const getRecommendation = (value: number) => {
+    if (value >= 0.6)
+      return "Crop is healthy. Continue current management practices.";
+    if (value >= 0.4)
+      return "Moderate stress detected. Consider increasing irrigation and nutrient application.";
+    return "Significant stress detected. Immediate intervention required - check irrigation, nutrients, and pest pressure.";
+  };
 
-  if (!ndvi) {
-    // If user hasn't set a location yet, show the LocationInput so they can pick one
-    if (!location) {
-      return (
-        <div className="py-6">
-          <LocationInput
-            onLocationSelect={(loc) => {
-              // set the location in context which will trigger the NDVI fetch
-              try {
-                setLocation(loc);
-              } catch {
-                // ignore
-              }
-            }}
-          />
-        </div>
-      );
-    }
-
-    return (
-      <div className="text-center py-12">
-        <Activity className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-        <p className="text-gray-600 dark:text-gray-400">
-          No NDVI data available. Analyze a location to see vegetation health
-          metrics.
-        </p>
-      </div>
-    );
-  }
-
-  // status coloring removed (unused) — keep simple textual status in UI
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
 
   return (
-    <div className="space-y-6">
-      <section className="bg-white dark:bg-gray-900 rounded-xl p-6">
-        <div className="flex items-start space-x-4 mb-6">
-          <LineChart className="w-8 h-8 text-gray-700 dark:text-gray-200" />
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
-              NDVI Analysis
-            </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
-              Normalized Difference Vegetation Index tracks crop health through
-              satellite imagery
-            </p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-linear-to-br from-green-50 to-amber-50 text-gray-900">
+      <Navbar onLogout={handleLogout} />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <ModuleCalculationCard
-            title="Latest NDVI"
-            description={
-              Number.isFinite(ndvi.latestValue)
-                ? `${ndvi.latestValue.toFixed(3)} — ${
-                    ndvi.latestDate
-                      ? new Date(ndvi.latestDate).toLocaleDateString()
-                      : "Date unknown"
-                  }`
-                : "No recent NDVI available"
-            }
-          />
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <h1 className="text-3xl font-bold text-green-700 mb-3">
+          🌱 NDVI Vegetation Health
+        </h1>
+        <p className="text-gray-600 mb-6">
+          Satellite-based crop canopy health analysis.
+        </p>
 
-          <ModuleCalculationCard
-            title="Vegetation Coverage"
-            description={
-              Number.isFinite(vegetationCover)
-                ? `${vegetationCover}% green biomass`
-                : "Coverage data not available"
-            }
-          />
+        {loading && <LoadingSpinner message="Fetching NDVI data..." />}
+        {error && <ErrorMessage message={error} />}
 
-          <ModuleCalculationCard
-            title="Seasonal Average"
-            description={
-              Number.isFinite(ndvi.seasonalAverage)
-                ? `${ndvi.seasonalAverage.toFixed(3)} — ${
-                    ndvi.change !== null
-                      ? ((ndvi.change / ndvi.seasonalAverage) * 100).toFixed(
-                          2
-                        ) + "%"
-                      : "Change N/A"
-                  }`
-                : "No seasonal average"
-            }
-          />
-        </div>
+        {!loading && !error && ndviValue !== null && (
+          <div className="space-y-6">
+            {/* Main NDVI Card */}
+            <div className="bg-white shadow-lg rounded-xl p-8 border border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-800 mb-6">
+                Current NDVI Value
+              </h2>
 
-        {/* NDVI Trend Chart */}
-        {ndvi.history && ndvi.history.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-              NDVI Trend Over Time
-            </h3>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+                {/* NDVI Value Display */}
+                <div className="text-center lg:text-left">
+                  <div className="text-6xl font-bold text-gray-900 mb-2">
+                    {ndviValue.toFixed(3)}
+                  </div>
+                  <div className="text-lg text-gray-700">
+                    Status:{" "}
+                    <span className={`font-semibold ${score?.color}`}>
+                      {score?.label}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Source:{" "}
+                    {ndviMeta?.is_real_data
+                      ? "Copernicus API"
+                      : "Synthetic Fallback"}
+                  </p>
+                </div>
+
+                {/* NDVI Bar */}
+                <div className="lg:col-span-2 space-y-3">
+                  <div className="relative group">
+                    <div className="h-8 rounded-full bg-linear-to-r from-red-600 via-amber-500 to-emerald-700 shadow-inner relative overflow-visible">
+                      <div
+                        className="absolute top-1/2 w-5 h-5 bg-white border-2 border-gray-400 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-125"
+                        style={{
+                          left: `${Math.min(Math.max(fillPercent, 0), 100)}%`,
+                          transform: "translate(-50%, -50%)",
+                        }}
+                        title={`NDVI: ${ndviValue.toFixed(3)}`}
+                      >
+                        {/* Tooltip on hover */}
+                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                          {ndviValue.toFixed(3)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-600 px-1">
+                    <span>-1.0 (Low)</span>
+                    <span className="text-xs text-gray-400">0.0</span>
+                    <span>+1.0 (High)</span>
+                  </div>
+
+                  {/* Health Indicator */}
+                  <div className="flex items-center justify-center gap-3 pt-2">
+                    <div className="text-3xl">
+                      {ndviValue >= 0.6 ? "✅" : ndviValue >= 0.4 ? "⚠️" : "🚨"}
+                    </div>
+                    <p className="text-sm text-gray-600">Health Indicator</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+                <h3 className="text-gray-600 text-sm font-medium mb-2">
+                  Vegetation Coverage
+                </h3>
+                <p className="text-3xl font-bold text-green-600">
+                  {(ndviValue * 100).toFixed(1)}%
+                </p>
+                <div className="mt-3 bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-green-600 h-2 rounded-full"
+                    style={{ width: `${Math.min(ndviValue * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+                <h3 className="text-gray-600 text-sm font-medium mb-2">
+                  NDVI Range
+                </h3>
+                <p className="text-lg text-gray-800">
+                  <span className="font-mono text-2xl font-bold">-1.0</span> to{" "}
+                  <span className="font-mono text-2xl font-bold">+1.0</span>
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  Higher values indicate healthier vegetation
+                </p>
+              </div>
+
+              <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+                <h3 className="text-gray-600 text-sm font-medium mb-2">
+                  Recommendations
+                </h3>
+                <p className="text-sm text-gray-800 leading-relaxed">
+                  {getRecommendation(ndviValue)}
+                </p>
+              </div>
+            </div>
+
+            {/* NDVI Scale Reference */}
+            <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">
+                NDVI Scale Reference
+              </h2>
+              <div className="space-y-3">
+                <div className="flex items-center">
+                  <div className="w-12 h-12 bg-red-500 rounded mr-4"></div>
+                  <div>
+                    <p className="font-semibold text-gray-900">
+                      0.0 - 0.3: Poor/Stressed
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Bare soil, dead vegetation, or severe stress
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-12 h-12 bg-yellow-500 rounded mr-4"></div>
+                  <div>
+                    <p className="font-semibold text-gray-900">
+                      0.3 - 0.6: Moderate
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Stressed vegetation, sparse coverage
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-12 h-12 bg-green-500 rounded mr-4"></div>
+                  <div>
+                    <p className="font-semibold text-gray-900">
+                      0.6 - 1.0: Healthy/Dense
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Dense, healthy vegetation with good coverage
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Insights */}
+            <div className="bg-linear-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6 shadow-lg">
+              <h3 className="text-xl font-bold text-green-800 mb-4">
+                🌱 Understanding NDVI Calculations and Applications
+              </h3>
+              <p className="text-green-700 leading-relaxed mb-4">
+                NDVI (Normalized Difference Vegetation Index) is a crucial
+                metric in precision agriculture, calculated using satellite
+                multispectral imagery to assess vegetation health and density.
+              </p>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4">
+                  <h4 className="font-semibold text-green-800 mb-2">
+                    📐 NDVI Formula
+                  </h4>
+                  <p className="text-sm text-gray-700">
+                    <strong>NDVI = (NIR - Red) / (NIR + Red)</strong>
+                    <br />
+                    Where NIR is near-infrared reflectance (0.7-1.1 μm) and Red
+                    is red light reflectance (0.6-0.7 μm). Values range from -1
+                    to +1, with higher values indicating healthier, denser
+                    vegetation.
+                  </p>
+                </div>
+                <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4">
+                  <h4 className="font-semibold text-green-800 mb-2">
+                    🛰️ Satellite Data Sources
+                  </h4>
+                  <p className="text-sm text-gray-700">
+                    Utilizes multispectral sensors from satellites like Landsat,
+                    Sentinel-2, and MODIS. Near-infrared and red bands are
+                    processed to calculate vegetation indices with high spatial
+                    resolution.
+                  </p>
+                </div>
+                <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4">
+                  <h4 className="font-semibold text-green-800 mb-2">
+                    📊 Health Interpretation
+                  </h4>
+                  <p className="text-sm text-gray-700">
+                    NDVI {">"} 0.6: Dense healthy vegetation
+                    <br />
+                    0.3-0.6: Moderate health/stress
+                    <br />
+                    {"<"} 0.3: Poor vegetation or bare soil
+                    <br />
+                    Temporal trends help detect changes in crop health over
+                    time.
+                  </p>
+                </div>
+                <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4">
+                  <h4 className="font-semibold text-green-800 mb-2">
+                    🌾 Agricultural Applications
+                  </h4>
+                  <p className="text-sm text-gray-700">
+                    Used for drought monitoring, yield prediction, irrigation
+                    scheduling, and precision agriculture. Helps identify stress
+                    areas before visible symptoms appear, enabling proactive
+                    management.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Status Summary */}
-        <div className="bg-linear-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-6 border border-green-200 dark:border-green-800">
-          <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
-            Current Status: {ndvi.status}
-          </h4>
-          <p className="text-gray-700 dark:text-gray-300">{ndvi.trend}</p>
-        </div>
-      </section>
+        {!loading && !ndviValue && (
+          <p className="text-gray-500 mt-4">
+            Set a location on the dashboard to begin.
+          </p>
+        )}
+      </main>
     </div>
   );
-};
-
-export default NDVIPage;
+}

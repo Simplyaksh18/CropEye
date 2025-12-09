@@ -135,7 +135,31 @@ def recommend_crops():
         
         # Get recommendations
         recommendations = recommender.recommend(input_params)
-        
+
+        # Add crop requirements to each recommendation
+        for rec in recommendations:
+            crop_name = rec['crop']
+            if crop_name in recommender.crop_table:
+                crop_params = recommender.crop_table[crop_name]
+
+                rec['rainfall_requirements'] = {
+                    'min_mm': crop_params.get('rain_min_mm', 0),
+                    'max_mm': crop_params.get('rain_max_mm', 0),
+                    'optimal_range': f"{crop_params.get('rain_min_mm', 0)}-{crop_params.get('rain_max_mm', 0)} mm/year"
+                }
+
+                rec['ph_requirements'] = {
+                    'min': crop_params.get('ph_min', 0),
+                    'max': crop_params.get('ph_max', 0),
+                    'optimal_range': f"{crop_params.get('ph_min', 0)} - {crop_params.get('ph_max', 0)}"
+                }
+
+                rec['temp_requirements'] = {
+                    'min_c': crop_params.get('tmin', 0),
+                    'max_c': crop_params.get('tmax', 0),
+                    'optimal_range': f"{crop_params.get('tmin', 0)} - {crop_params.get('tmax', 0)} °C"
+                }
+
         # Format response
         response = {
             'success': True,
@@ -233,14 +257,9 @@ def recommend_crops_integrated():
                 timeout=10
             )
             if weather_response.status_code == 200:
-                try:
-                    weather_data = weather_response.json()
-                except Exception:
-                    weather_data = None
-                if weather_data:
-                    result['data_sources'].append('weather')
-                    logger.info("✅ Weather data retrieved")
-                    logger.debug(f"Weather payload snippet: {str(weather_data)[:300]}")
+                weather_data = weather_response.json()
+                result['data_sources'].append('weather')
+                logger.info("✅ Weather data retrieved")
         except requests.RequestException as e:
             logger.warning(f"⚠️ Could not fetch weather data: {e}")
         
@@ -253,18 +272,13 @@ def recommend_crops_integrated():
                 timeout=10
             )
             if ndvi_response.status_code == 200:
-                try:
-                    ndvi_data = ndvi_response.json()
-                except Exception:
-                    ndvi_data = None
-                if ndvi_data:
-                    result['data_sources'].append('ndvi')
-                    logger.info("✅ NDVI data retrieved")
-                    logger.debug(f"NDVI payload snippet: {str(ndvi_data)[:300]}")
+                ndvi_data = ndvi_response.json()
+                result['data_sources'].append('ndvi')
+                logger.info("✅ NDVI data retrieved")
         except requests.RequestException as e:
             logger.warning(f"⚠️ Could not fetch NDVI data: {e}")
         
-        # Extract parameters for recommendation with robust parsing
+        # Extract parameters for recommendation
         input_params = {
             'latitude': lat,
             'longitude': lng,
@@ -273,115 +287,66 @@ def recommend_crops_integrated():
             'temp_mean': 25,  # Default
             'ndvi': 0.5  # Default
         }
-
-        # Helper: robust NDVI extractor (handles several response shapes)
-        def _extract_ndvi(payload):
-            try:
-                if payload is None:
-                    return None
-                # Common wrapper: {'status':..., 'data': {...}}
-                if isinstance(payload, dict) and 'data' in payload:
-                    payload = payload['data']
-
-                if isinstance(payload, dict):
-                    # Case: {'ndvi': 0.5} or {'ndvi': {'value': 0.5}}
-                    if 'ndvi' in payload:
-                        v = payload['ndvi']
-                        if isinstance(v, dict) and 'value' in v:
-                            return float(v['value'])
-                        try:
-                            return float(v)
-                        except Exception:
-                            pass
-                    # Case: payload directly contains 'value' key
-                    if 'value' in payload:
-                        try:
-                            return float(payload['value'])
-                        except Exception:
-                            pass
-                return None
-            except Exception:
-                return None
-
-        # Helper: robust weather extractor
-        def _extract_weather(payload):
-            temp = None
-            rain = None
-            try:
-                if payload is None:
-                    return {'temp': None, 'rain': None}
-                # If wrapper exists
-                if isinstance(payload, dict):
-                    # Direct keys
-                    if 'temperature' in payload and isinstance(payload['temperature'], dict):
-                        temp = payload['temperature'].get('current')
-                    if 'temp' in payload:
-                        try:
-                            temp = float(payload['temp'])
-                        except Exception:
-                            pass
-                    # agricultural_context.et.temperature
-                    ac = payload.get('agricultural_context') or payload.get('agri')
-                    if isinstance(ac, dict):
-                        # some services nest ET data
-                        et = ac.get('et') or ac.get('et_mm')
-                        if isinstance(et, dict) and 'temperature' in et:
-                            temp = et.get('temperature')
-                        # rainfall may be under 'rain' or 'rainfall'
-                        rain = payload.get('rain') or payload.get('rainfall') or ac.get('rain') or ac.get('rainfall')
-                    # top-level rain keys
-                    if rain is None:
-                        rain = payload.get('rain') or payload.get('rainfall') or payload.get('precipitation')
-                return {'temp': (float(temp) if temp is not None else None), 'rain': (float(rain) if rain is not None else None)}
-            except Exception:
-                return {'temp': None, 'rain': None}
-
+        
         # Override with actual data
         if soil_data:
             result['soil_data'] = soil_data
-            # Try multiple soil schemas
-            try:
-                # 1) soil_data['soil_properties']['ph']['value']
-                if isinstance(soil_data, dict):
-                    sp = soil_data.get('soil_properties') or soil_data.get('properties') or soil_data
-                    if isinstance(sp, dict):
-                        ph_val = None
-                        if 'ph' in sp and isinstance(sp['ph'], dict):
-                            ph_val = sp['ph'].get('value')
-                        elif 'ph' in sp:
-                            ph_val = sp.get('ph')
-                        if ph_val is not None:
-                            try:
-                                input_params['ph'] = float(ph_val)
-                            except Exception:
-                                pass
-            except Exception:
-                pass
-
+            if 'soil_properties' in soil_data:
+                input_params['ph'] = soil_data['soil_properties'].get('ph', {}).get('value', 6.5)
+        
         if weather_data:
             result['weather_data'] = weather_data
-            w = _extract_weather(weather_data)
-            if w.get('temp') is not None:
-                input_params['temp_mean'] = w['temp']
-            if w.get('rain') is not None:
-                input_params['rainfall'] = w['rain']
-
+            if 'temperature' in weather_data:
+                input_params['temp_mean'] = weather_data['temperature'].get('current', 25)
+            # Extract rainfall from weather data
+            if 'rain' in weather_data:
+                # If it's a dict with 1h key, use that; otherwise use direct value
+                rain_value = weather_data['rain']
+                if isinstance(rain_value, dict):
+                    input_params['rainfall'] = rain_value.get('1h', 700)
+                else:
+                    input_params['rainfall'] = rain_value if rain_value > 0 else 700
+            else:
+                input_params['rainfall'] = 700
+        
         if ndvi_data:
             result['ndvi_data'] = ndvi_data
-            ndv = _extract_ndvi(ndvi_data)
-            if ndv is not None:
-                input_params['ndvi'] = ndv
+            if 'ndvi' in ndvi_data and 'value' in ndvi_data['ndvi']:
+                input_params['ndvi'] = ndvi_data['ndvi']['value']
         
         # Get recommendations
         if recommender:
             recommendations = recommender.recommend(input_params)
             result['recommendations'] = recommendations[:10]
             result['input_parameters'] = input_params
+
+            # Attach crop requirement data for all integrated results
+            for rec in result['recommendations']:
+                crop_name = rec['crop']
+                if crop_name in recommender.crop_table:
+                    params = recommender.crop_table[crop_name]
+
+                    rec['rainfall_requirements'] = {
+                        'min_mm': params.get('rain_min_mm', 0),
+                        'max_mm': params.get('rain_max_mm', 0),
+                        'optimal_range': f"{params.get('rain_min_mm', 0)}-{params.get('rain_max_mm', 0)} mm/year"
+                    }
+                    rec['ph_requirements'] = {
+                        'min': params.get('ph_min', 0),
+                        'max': params.get('ph_max', 0),
+                        'optimal_range': f"{params.get('ph_min', 0)} - {params.get('ph_max', 0)}"
+                    }
+                    rec['temp_requirements'] = {
+                        'min_c': params.get('tmin', 0),
+                        'max_c': params.get('tmax', 0),
+                        'optimal_range': f"{params.get('tmin', 0)} - {params.get('tmax', 0)} °C"
+                    }
+
             logger.info(f"✅ Top crop: {recommendations[0]['crop']}")
         else:
             result['success'] = False
             result['error'] = 'Recommender not available'
-        
+
         return jsonify(result), 200
         
     except Exception as e:

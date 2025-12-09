@@ -1,16 +1,37 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import ModuleCalculationCard from "./ModuleCalculationCard";
 
 export const Footer: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleServiceClick = (path: string) => {
     navigate(path);
   };
 
+  // Map routes to their background colors
+  const getFooterColor = () => {
+    switch (location.pathname) {
+      case "/ndvi":
+        return "bg-linear-to-br from-green-50 to-amber-50"; // NDVI: Green for vegetation
+      case "/water":
+        return "bg-linear-to-br from-blue-50 to-cyan-50"; // Water: Blue for irrigation
+      case "/pests":
+        return "bg-linear-to-br from-red-200 to-orange-300"; // Pests: Red/Orange for threats
+      case "/soil":
+        return "bg-linear-to-br from-amber-50 to-yellow-50"; // Soil: Brown/Earth
+      case "/crops":
+        return "bg-linear-to-br from-lime-100 to-yellow-100"; // Crops: Green/Gold
+      case "/weather":
+        return "bg-linear-to-br from-blue-200 to-indigo-300"; // Weather: Sky blue
+      default:
+        return "bg-linear-to-br from-green-100 to-amber-100"; // Dashboard: Default green-amber
+    }
+  };
+
   return (
-    <footer className="bg-linear-to-br from-green-100 to-amber-100 text-gray-900 py-12 relative">
+    <footer className={`${getFooterColor()} text-gray-900 py-12 relative`}>
       {/* Module Calculation Card - Always visible */}
       <div className="mb-8">
         <ModuleCalculationCard
@@ -35,29 +56,29 @@ export const Footer: React.FC = () => {
                 href="#"
                 className="text-gray-600 hover:text-green-600 transition-colors"
               >
-                <span className="sr-only">Facebook</span>
-                📘
+                <span className="sr-only">CropEye</span>
+                🌾
               </a>
               <a
                 href="#"
                 className="text-gray-600 hover:text-green-600 transition-colors"
               >
-                <span className="sr-only">Twitter</span>
-                🐦
+                <span className="sr-only">Satellite</span>
+                🛰️
               </a>
               <a
                 href="#"
                 className="text-gray-600 hover:text-green-600 transition-colors"
               >
-                <span className="sr-only">LinkedIn</span>
-                💼
+                <span className="sr-only">Weather</span>
+                🌤️
               </a>
               <a
                 href="#"
                 className="text-gray-600 hover:text-green-600 transition-colors"
               >
-                <span className="sr-only">YouTube</span>
-                📺
+                <span className="sr-only">Agriculture</span>
+                🏞️
               </a>
             </div>
           </div>
@@ -71,7 +92,7 @@ export const Footer: React.FC = () => {
                   onClick={() => handleServiceClick("/ndvi")}
                   className="text-gray-700 hover:text-green-600 transition-colors text-left"
                 >
-                  Satellite Monitoring
+                  NDVI Vegetation Health
                 </button>
               </li>
               <li>

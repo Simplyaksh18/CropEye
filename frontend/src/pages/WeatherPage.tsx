@@ -1,32 +1,56 @@
 // src/pages/WeatherPage.tsx
-
-import React, { useState, useEffect } from "react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-} from "recharts";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import { useLocation } from "../hooks/useLocation";
-import { api, API_BASE } from "../services/api";
-import type { WeatherResponse } from "../types";
+import { useLocation } from "../context/LocationContext";
+import Navbar from "../components/Navbar";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
-import Navbar from "../components/Navbar";
 
-export const WeatherPage: React.FC = () => {
+interface WeatherResponse {
+  temperature: {
+    current: number;
+    feels_like: number;
+    min: number;
+    max: number;
+  };
+  humidity: number;
+  rain?: number;
+  pressure: number;
+  wind: { speed: number };
+  clouds: number;
+  weather: {
+    main: string;
+    description: string;
+    icon: string;
+  };
+  agricultural_context?: {
+    heat_stress?: {
+      temperature_c: number;
+      humidity_percent: number;
+      stress_level: string;
+      recommendation: string;
+    };
+    frost_risk?: {
+      current_temperature: number;
+      risk_level: string;
+      recommendation: string;
+    };
+    gdd?: number;
+    et?: {
+      et_mm_day: number;
+    };
+  };
+  data_source?: string;
+}
+
+export default function WeatherPage() {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const { location } = useLocation();
-  const [data, setData] = useState<WeatherResponse | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [weather, setWeather] = useState<WeatherResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const handleLogout = () => {
     logout();
@@ -34,280 +58,166 @@ export const WeatherPage: React.FC = () => {
   };
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!location) {
-        console.warn("Please set a location first");
-        return;
-      }
+    if (!location?.lat || !location?.lng) {
+      setLoading(false);
+      return;
+    }
 
-      setLoading(true);
+    console.log("📡 Fetching Weather for:", location);
+    setLoading(true);
+    setError("");
 
-      try {
-        const result = await api.weather.agricultural(
-          location.lat,
-          location.lng
-        );
-        setData(result);
-      } catch (err) {
-        console.error("Weather API error:", err);
-        type ErrWithStatus = { status?: number };
-        const e = err as ErrWithStatus;
-        if (e && e.status === 0) {
-          console.warn(
-            `Cannot reach Weather service at ${API_BASE.weather}. Ensure the Weather backend is running.`
-          );
-        } else {
-          console.warn(
-            "Failed to fetch weather data. Please check backend connection."
-          );
-        }
-        setData(null);
-      } finally {
+    fetch(
+      `http://localhost:5003/api/weather/current?lat=${location.lat}&lng=${location.lng}`
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("🌦 API Response:", data);
+        setWeather(data);
         setLoading(false);
-      }
-    };
+      })
+      .catch((e) => {
+        console.error("❌ Weather fetch error:", e);
+        setError("Failed to fetch weather data.");
+        setLoading(false);
+      });
+  }, [location?.lat, location?.lng]);
 
-    fetchData();
-  }, [location]);
-  if (!location) {
-    return (
-      <div className="min-h-screen bg-linear-to-br from-green-100 to-amber-100 p-6">
-        <div className="max-w-4xl mx-auto">
-          <ErrorMessage message="Please set a location from the dashboard" />
-        </div>
-      </div>
-    );
+  if (!location?.lat || !location?.lng) {
+    return <ErrorMessage message="Set location first" />;
   }
 
-  if (loading) return <LoadingSpinner message="Fetching weather data..." />;
+  const agri = weather?.agricultural_context;
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-green-100 to-amber-100">
+    <div className="min-h-screen bg-linear-to-br from-blue-200 to-indigo-300 text-gray-900">
       <Navbar onLogout={handleLogout} />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold mb-6">Weather Forecast</h1>
 
-        {/* Error display removed since error is not used */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <h1 className="text-3xl font-bold text-purple-700 mb-3">
+          🌤️ Weather Conditions
+        </h1>
+        <p className="text-gray-600 mb-6">
+          Real-time weather data with agricultural insights for crop management.
+        </p>
 
-        {data && (
+        {loading && <LoadingSpinner message="🌡️ Fetching current weather..." />}
+        {error && <ErrorMessage message={error} />}
+
+        {!loading && !error && weather && (
           <div className="space-y-6">
-            {/* Current Weather */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-white p-6 rounded-lg shadow border">
-                <p className="text-gray-600 text-sm mb-1">Temperature</p>
-                <p className="text-3xl font-bold text-orange-600">
-                  {data.temp}°C
-                </p>
-              </div>
-              <div className="bg-white p-6 rounded-lg shadow border">
-                <p className="text-gray-600 text-sm mb-1">Humidity</p>
-                <p className="text-3xl font-bold text-blue-600">
-                  {data.humidity}%
-                </p>
-              </div>
-              <div className="bg-white p-6 rounded-lg shadow border">
-                <p className="text-gray-600 text-sm mb-1">Rainfall</p>
-                <p className="text-3xl font-bold text-green-600">
-                  {data.rainfall} mm
-                </p>
-              </div>
-              <div className="bg-white p-6 rounded-lg shadow border">
-                <p className="text-gray-600 text-sm mb-1">Wind Speed</p>
-                <p className="text-3xl font-bold text-gray-700">
-                  {data.wind_speed} km/h
-                </p>
-              </div>
-            </div>
+            {/* Current weather */}
+            <div className="bg-white rounded-xl p-6 shadow-lg">
+              <h2 className="text-xl font-bold mb-4">🌤 Current Weather</h2>
 
-            {/* Alerts */}
-            {data.alerts && data.alerts.length > 0 && (
-              <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
-                <h3 className="font-semibold text-yellow-900 mb-2">
-                  ⚠️ Weather Alerts
-                </h3>
-                {data.alerts.map((alert, idx) => (
-                  <p key={idx} className="text-yellow-800 text-sm">
-                    {alert.message}
-                  </p>
-                ))}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                <WeatherItem
+                  label="Temperature"
+                  value={`${weather.temperature.current}°C`}
+                />
+                <WeatherItem
+                  label="Feels Like"
+                  value={`${weather.temperature.feels_like}°C`}
+                />
+                <WeatherItem label="Humidity" value={`${weather.humidity}%`} />
+                <WeatherItem
+                  label="Pressure"
+                  value={`${weather.pressure} hPa`}
+                />
+                <WeatherItem
+                  label="Wind Speed"
+                  value={`${weather.wind.speed} m/s`}
+                />
+                <WeatherItem label="Clouds" value={`${weather.clouds}%`} />
+                <WeatherItem
+                  label="Rain (Last 1h)"
+                  value={`${weather.rain ? weather.rain : 0} mm`}
+                />
               </div>
-            )}
 
-            {/* Agricultural Context (defensive) */}
-            {data.agricultural_context ? (
-              <div className="bg-white p-6 rounded-lg shadow border">
-                <h2 className="text-xl font-bold mb-4">Agricultural Context</h2>
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-gray-600 text-sm">
-                      Growing Degree Days (GDD)
-                    </p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {typeof data.agricultural_context.gdd === "number" &&
-                      Number.isFinite(data.agricultural_context.gdd)
-                        ? data.agricultural_context.gdd
-                        : "N/A"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-600 text-sm">Frost Risk</p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {data.agricultural_context.frost_risk ?? "Unknown"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-600 text-sm">Heat Stress Index</p>
-                    <p className="text-2xl font-bold text-orange-600">
-                      {typeof data.agricultural_context.heat_stress === "number"
-                        ? `${Math.round(
-                            data.agricultural_context.heat_stress * 100
-                          )}%`
-                        : "N/A"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-white p-6 rounded-lg shadow border">
-                <h2 className="text-xl font-bold mb-4">Agricultural Context</h2>
-                <p className="text-gray-600">
-                  No agricultural context available for this location.
-                </p>
-              </div>
-            )}
-
-            {/* Educational Insights - Always visible */}
-            <div className="bg-linear-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 shadow-lg">
-              <h3 className="text-xl font-bold text-blue-800 mb-4">
-                🌤️ Understanding Weather Analysis Calculations
-              </h3>
-              <p className="text-blue-700 leading-relaxed mb-4">
-                Our weather intelligence system integrates meteorological data
-                with crop physiology models to provide hyper-local agricultural
-                forecasts. The system processes real-time satellite weather
-                data, ground station observations, and climate models to
-                generate crop-specific insights. Growing Degree Days are
-                calculated using temperature accumulation formulas, frost risk
-                is assessed through probabilistic modeling of minimum
-                temperatures, and heat stress indices incorporate humidity and
-                duration factors. Weather alerts are triggered based on
-                threshold crossings that could impact crop development, enabling
-                proactive farm management decisions.
+              <p className="mt-3 text-gray-600 text-sm">
+                Source: {weather.data_source || "OpenWeather"}
               </p>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4">
-                  <h4 className="font-semibold text-blue-800 mb-2">
-                    🌡️ Growing Degree Days (GDD)
-                  </h4>
-                  <p className="text-sm text-gray-700">
-                    <strong>GDD = ((Tmax + Tmin)/2) - Tbase</strong>
-                    <br />
-                    Where Tbase is usually 10°C (50°F). Measures heat
-                    accumulation above crop base temperature. Higher GDD
-                    indicates more favorable growing conditions and faster crop
-                    development.
-                  </p>
-                </div>
-                <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4">
-                  <h4 className="font-semibold text-blue-800 mb-2">
-                    ❄️ Frost Risk Assessment
-                  </h4>
-                  <p className="text-sm text-gray-700">
-                    Based on minimum temperature forecasts and crop sensitivity
-                    thresholds. Risk levels: Low ({">"}5°C), Medium (0-5°C),
-                    High ({"<"}0°C). Considers crop phenology and historical
-                    frost patterns for accurate assessment.
-                  </p>
-                </div>
-                <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4">
-                  <h4 className="font-semibold text-blue-800 mb-2">
-                    🔥 Heat Stress Index
-                  </h4>
-                  <p className="text-sm text-gray-700">
-                    <strong>
-                      HSI = (T - Topt) × Duration × Humidity Factor
-                    </strong>
-                    <br />
-                    Where Topt is optimal temperature for the crop. Values above
-                    30% indicate potential heat stress that can reduce
-                    photosynthesis, yield, and quality.
-                  </p>
-                </div>
-                <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4">
-                  <h4 className="font-semibold text-blue-800 mb-2">
-                    ⚠️ Weather Alert System
-                  </h4>
-                  <p className="text-sm text-gray-700">
-                    Monitors temperature extremes ({">"}35°C or {"<"}0°C), heavy
-                    rainfall ({">"}50mm/day), and drought conditions (SPI {"<"}{" "}
-                    -1.5). Alerts are triggered based on crop-specific
-                    thresholds and historical impact data.
-                  </p>
+            </div>
+
+            {/* Agri Weather Insights */}
+            {agri && (
+              <div className="bg-white rounded-xl p-6 shadow-xl">
+                <h2 className="text-xl font-bold mb-4">
+                  🌱 Agricultural Weather Insights
+                </h2>
+
+                <div className="grid md:grid-cols-3 gap-6">
+                  {agri.heat_stress && (
+                    <AgriCard
+                      title="🔥 Heat Stress"
+                      value={`${agri.heat_stress.temperature_c}°C / ${agri.heat_stress.humidity_percent}%`}
+                      desc={agri.heat_stress.recommendation}
+                    />
+                  )}
+
+                  {agri.frost_risk && (
+                    <AgriCard
+                      title="❄ Frost Risk"
+                      value={agri.frost_risk.risk_level}
+                      desc={agri.frost_risk.recommendation}
+                    />
+                  )}
+
+                  {agri.et && (
+                    <AgriCard
+                      title="💧 Evapotranspiration"
+                      value={`${agri.et.et_mm_day} mm/day`}
+                      desc="Higher ET → More irrigation needed"
+                    />
+                  )}
+
+                  {agri.gdd && (
+                    <AgriCard
+                      title="🌾 Growing Degree Days"
+                      value={`${agri.gdd.toFixed(1)}`}
+                      desc="Good for crop progress analysis"
+                    />
+                  )}
                 </div>
               </div>
-            </div>
-
-            {/* 7-Day Forecast Chart */}
-            <div className="bg-white p-6 rounded-lg shadow border">
-              <h2 className="text-xl font-bold mb-4">
-                7-Day Temperature Forecast
-              </h2>
-              {data.forecast_7day && data.forecast_7day.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={data.forecast_7day}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line
-                      type="monotone"
-                      dataKey="temp_max"
-                      stroke="#f97316"
-                      name="Max Temp"
-                      strokeWidth={2}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="temp_min"
-                      stroke="#3b82f6"
-                      name="Min Temp"
-                      strokeWidth={2}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <p className="text-gray-600">
-                  No 7-day temperature forecast available.
-                </p>
-              )}
-            </div>
-
-            {/* Rainfall Forecast */}
-            <div className="bg-white p-6 rounded-lg shadow border">
-              <h2 className="text-xl font-bold mb-4">
-                7-Day Rainfall Forecast
-              </h2>
-              {data.forecast_7day && data.forecast_7day.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={data.forecast_7day}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="rain" fill="#10b981" name="Rainfall (mm)" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <p className="text-gray-600">
-                  No 7-day rainfall forecast available.
-                </p>
-              )}
-            </div>
+            )}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
-};
+}
 
-export default WeatherPage;
+function WeatherItem({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | number;
+}) {
+  return (
+    <div className="bg-gray-100 p-4 rounded-lg text-center">
+      <p className="text-gray-600 text-sm">{label}</p>
+      <p className="font-semibold text-lg mt-1 text-gray-900">{value}</p>
+    </div>
+  );
+}
+
+function AgriCard({
+  title,
+  value,
+  desc,
+}: {
+  title: string;
+  value: string | number;
+  desc: string;
+}) {
+  return (
+    <div className="border border-gray-300 bg-gray-100 p-4 rounded-lg">
+      <h3 className="font-semibold mb-2 text-gray-900">{title}</h3>
+      <p className="text-green-600 font-bold text-xl">{value}</p>
+      <p className="text-gray-600 text-xs mt-2">{desc}</p>
+    </div>
+  );
+}

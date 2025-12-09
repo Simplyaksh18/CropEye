@@ -12,12 +12,12 @@ import { useAuth } from "./hooks/useAuth";
 import { LocationProvider } from "./context/LocationContext";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
-import { NDVIPage } from "./pages/NDVIPage";
-import { WeatherPage } from "./pages/WeatherPage";
-import { WaterPage } from "./pages/WaterPage";
-import { SoilPage } from "./pages/SoilPage";
-import { CropsPage } from "./pages/CropsPage";
-import { PestsPage } from "./pages/PestsPage";
+import NDVIPage from "./pages/NDVIPage";
+import WeatherPage from "./pages/WeatherPage";
+import WaterPage from "./pages/WaterPage";
+import SoilPage from "./pages/SoilPage";
+import CropsPage from "./pages/CropsPage";
+import PestsPage from "./pages/PestsPage";
 import Footer from "./components/Footer";
 
 const AppContent: React.FC = () => {
