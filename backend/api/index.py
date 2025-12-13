@@ -8,11 +8,15 @@ It imports the Flask app from app.py and exports it as the handler.
 import sys
 import os
 
-# Add the backend directory to Python path
-sys.path.insert(0, os.path.dirname(__file__))
+# Add the parent directory (backend) to Python path so we can import app
+backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, backend_dir)
 
 # Import the Flask app instance
 from app import app
 
-# Export the Flask app as the handler
+# Export the Flask app as the handler for Vercel
 handler = app
+
+# Also ensure app is exposed if imported directly
+__all__ = ['app', 'handler']
