@@ -1,0 +1,51 @@
+# Python cache and build files
+
+**pycache**
+_.pyc
+_.pyo
+_.egg-info
+.pytest_cache
+.coverage
+.env.local
+.env._.local
+
+# Testing
+
+tests/
+test\__.py
+_\_test.py
+pytest.ini
+
+# Development
+
+.venv
+venv
+.git
+.gitignore
+\*.md
+docs/
+
+# Data and Logs
+
+logs/
+sentinel_data/
+_.log
+_.tif
+\*.tiff
+
+# Local development
+
+.vscode
+.idea
+_.swp
+_.swo
+
+# Temporary files
+
+**pycache**/
+\*.db
+instance/
+
+# Keep only what's needed for production
+
+# All other files will be excluded
