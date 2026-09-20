@@ -1,114 +1,667 @@
-🌿 CropEye: Predictive GIS Dashboard for Precision Agriculture Recruiter Summary: A predictive GIS dashboard for precision agriculture. It monitors Land Health (NDVI), Pest Risk, and Weather using advanced geospatial analysis. The project validates a scalable, production-ready architecture by demonstrating real-time data ingestion and processing capabilities with open satellite and synthetic sensor data.
+# 🌾 CropEye — Predictive GIS Platform for Precision Agriculture
 
-🚀 Project Overview CropEye is a full-stack, data-driven Geographic Information System (GIS) platform built to empower farmers with the predictive intelligence needed to optimize land health, manage risks, and maximize yield. It serves as a comprehensive visual interface that transforms complex geospatial and environmental time-series data into actionable, map-based insights for precision farming decisions.
+**CropEye** is a full-stack precision-agriculture platform that transforms satellite imagery, soil information, weather data, and agricultural models into location-specific insights for farmers.
 
-✨ Key Features
+Instead of presenting environmental datasets independently, CropEye brings **vegetation health, soil conditions, weather, crop recommendations, irrigation requirements, and pest risk** together through a unified dashboard and modular analytics backend.
 
-CropEye provides a centralized, interactive map interface with real-time analytics across several critical domains:
-Land Health Monitoring (NDVI/EVI): Visualize current and historical Vegetative Index (NDVI/EVI) data derived from open-access satellite imagery (e.g., Copernicus Sentinel). This allows for rapid identification of crop stress, nutrient deficiencies, and irrigation inconsistencies across the acreage.
-Predictive Pest & Disease Risk Mapping: Integrates external models and simulated data to calculate and display hyper-local risk indices for common pests and diseases, based on environmental factors like temperature and humidity.
-Hyper-Local Weather Forecasting: Delivers high-resolution, short-term weather forecasts directly layered onto the farm map, enabling timely scheduling of resource-intensive activities like spraying or harvesting.
-Field-Level Data Aggregation: Allows users to define specific field boundaries to generate aggregated statistics and historical charts for soil, health, and weather metrics.
+---
 
-🛠️ Technical Strategy: Scalability & Real-Time Simulation
+## 🌱 Project Overview
 
-This project is architected to be production-ready and showcases critical skills in data ingestion, time-series analysis, and scalable dashboard design—all essential for enterprise GIS roles.
-Recruiter Note: Real-time data input is successfully demonstrated using industry-standard simulation and open-access data sources, confirming the system's ability to seamlessly integrate physical hardware (drones, in-field sensors) when available.
+Modern agriculture generates and depends on information from multiple sources: satellite imagery, soil databases, weather services, climate datasets, and field observations.
 
-## Module API Integrations
+The challenge is turning these disconnected datasets into information that farmers can actually use.
 
-CropEye integrates multiple data sources through specialized modules, each leveraging specific APIs for accurate agricultural intelligence:
+CropEye addresses this by providing a GIS-oriented agricultural intelligence platform where a farmer's location becomes the input for multiple analytical modules.
 
-### 🌾 NDVI Module (Port 5001)
+The system can provide insights across:
 
-- **Purpose**: Monitors vegetation health and crop stress through satellite imagery analysis
-- **Copernicus Integration**: Uses Sentinel-2 satellite data via Copernicus Data Space Ecosystem for multispectral imagery processing
-  - **API Used**: Copernicus Data Space Ecosystem API (https://dataspace.copernicus.eu/)
-  - **Data Type**: Sentinel-2 Level-2A multispectral imagery
-  - **Authentication**: OAuth2 with client credentials (COPERNICUS_CLIENT_ID, COPERNICUS_CLIENT_SECRET)
-  - **Parameters**: NIR (Band 8), Red (Band 4) for NDVI calculation
-- **Data Sources**: Real-time satellite NDVI calculations with historical trend analysis
-- **API Endpoint**: `/api/ndvi/analyze` (POST with lat/lng coordinates)
-- **Key Features**: Vegetation coverage assessment, health status classification, temporal trend monitoring
+- 🛰️ Vegetation health using NDVI
+- 🌱 Soil properties and fertility
+- 🌦️ Current and forecast weather
+- 🌾 Crop suitability
+- 💧 Irrigation and water requirements
+- 🐛 Pest and disease risk
 
-### 🌱 Soil Module (Port 5002)
+CropEye uses a modular architecture so that individual agricultural models and external data providers can evolve independently while still being accessed through one dashboard.
 
-- **Purpose**: Analyzes soil composition, nutrient levels, and fertility parameters
-- **Copernicus Integration**: Leverages SoilGrids API for global soil property maps
-  - **API Used**: ISRIC SoilGrids REST API (https://soilgrids.org/)
-  - **Data Type**: Global soil property predictions at 250m resolution
-  - **Parameters**: pH, organic carbon, nitrogen, phosphorus, potassium, texture
-- **NDVI Integration**: Correlates soil properties with vegetation health data from NDVI module
-- **Data Sources**: pH, NPK levels, texture analysis, organic matter content
-- **API Endpoint**: `/api/soil/analyze` (POST with coordinates and NDVI correlation)
-- **Key Features**: Nutrient deficiency detection, soil type classification, fertility recommendations
+---
 
-### 🌤️ Weather Module (Port 5003)
+## ✨ Key Features
 
-- **Purpose**: Provides hyper-local weather forecasting and agricultural indices
-- **OpenWeatherMap Integration**: Real-time weather data and 7-day forecasts
-  - **API Used**: OpenWeatherMap One Call API 3.0 (https://openweathermap.org/api/one-call-3)
-  - **Data Type**: Current weather, hourly forecasts, daily forecasts
-  - **Authentication**: API key (OPENWEATHER_API_KEY)
-  - **Parameters**: Temperature, humidity, precipitation, wind speed, solar radiation
-- **Open-Meteo Integration**: Additional weather parameters and historical data
-  - **API Used**: Open-Meteo API (https://open-meteo.com/)
-  - **Data Type**: Historical weather data and additional meteorological parameters
-  - **Parameters**: Additional climate variables, historical trends
-- **Copernicus Integration**: ERA5 reanalysis data for long-term climate patterns
-  - **API Used**: Copernicus Climate Data Store (CDS) API
-  - **Data Type**: ERA5-Land reanalysis dataset
-  - **Parameters**: Long-term temperature, precipitation, soil moisture patterns
-- **API Endpoints**:
-  - `/api/weather/current` (GET with lat/lng)
-  - `/api/weather/agricultural` (GET with lat/lng for farming-specific indices)
-- **Key Features**: GDD calculation, frost risk assessment, heat stress monitoring
+### 🛰️ NDVI & Vegetation Health Analysis
 
-### 🌾 Crop Recommendation Module (Port 5004)
+CropEye processes multispectral satellite information to estimate vegetation health using the **Normalized Difference Vegetation Index (NDVI)**.
 
-- **Purpose**: Suggests optimal crops based on environmental conditions
-- **Data Integration**: Combines soil (Port 5002), weather (Port 5003), and NDVI (Port 5001) data for recommendations
-  - **Soil Data**: pH, nutrient levels from SoilGrids via Copernicus
-  - **Weather Data**: Temperature, rainfall from OpenWeatherMap/Open-Meteo
-  - **NDVI Data**: Vegetation health from Sentinel-2 via Copernicus
-- **API Endpoint**: `/api/crop/recommend` (POST with environmental parameters)
-- **Key Features**: Multi-factor scoring (pH, rainfall, temperature, NDVI), yield prediction
+Sentinel-2 imagery provides the spectral information required for vegetation analysis:
 
-### 💧 Water Management Module (Port 5005)
+```text
+NDVI = (NIR - Red) / (NIR + Red)
+```
 
-- **Purpose**: Calculates irrigation requirements and water stress indices
-- **Data Integration**: Uses weather (Port 5003) and soil (Port 5002) data for ET calculations
-  - **Weather Data**: Temperature, humidity, wind speed from OpenWeatherMap
-  - **Soil Data**: Texture, moisture retention from SoilGrids
-- **API Endpoint**: `/api/water/calculate` (POST with weather_data, soil_data, crop_type, and growth_stage parameters)
-- **Key Features**: Penman-Monteith ET0 calculation, irrigation scheduling, water stress monitoring
+The module uses:
 
-### 🐛 Pest & Disease Module (Port 5006)
+- Sentinel-2 Level-2A imagery
+- Band 8 — Near Infrared
+- Band 4 — Red
+- Location-based satellite retrieval
+- Vegetation-health classification
+- Historical trend analysis
 
-- **Purpose**: Assesses pest and disease risks based on environmental conditions
-- **Weather Integration**: Temperature and humidity-driven risk modeling from Weather module (Port 5003)
-  - **Weather Data**: Real-time temperature, humidity from OpenWeatherMap
-- **API Endpoint**: `/api/pests/assess` (POST with temperature, humidity, and crop_type parameters)
-- **Key Features**: Pest risk scoring, disease prediction, integrated pest management recommendations
+This allows vegetation conditions and possible crop-stress areas to be examined spatially.
 
-Strategy Component Demonstration
+---
 
-Key Skill Highlighted
-Satellite Data Proxy
-Dynamic processing of newly released Sentinel-2 or MODIS scenes to simulate live drone flyover imagery (e.g., "just-in-time" NDVI layers).
-Geospatial Image Processing (GDAL, Raster Analysis)
-Synthetic Sensor Streams
-Code-based simulators generate realistic, time-stamped JSON data streams (e.g., soil moisture, temperature) to mimic an active IoT network.
-Time-Series Data Management, Backend API Design
-Third-Party API Integration
-Continuous polling of services like OpenWeatherMap to provide dynamic, updating forecast data directly to the map interface.
-External API Integration, System Reliability
-⚙️ Technology Stack Frontend/Mapping: [Specify your choice: React/Angular/HTML, Mapbox GL JS/Leaflet]
+### 🌱 Soil Analysis
 
-Data Processing (Backend/Analysis): [Specify your choice: Python (GDAL, NumPy) / Node.js]
+The soil module retrieves location-specific soil information using **SoilGrids** and combines it with agricultural analysis.
 
-Data Storage: Firestore (for historical time-series logs and user configurations)
+Analysed parameters can include:
 
-Styling: Tailwind CSS (for modern, responsive UI design)
+- Soil pH
+- Organic carbon
+- Nitrogen
+- Phosphorus
+- Potassium
+- Soil texture
+- Fertility indicators
 
-Visualization: [Specify your choice: D3.js / Chart.js / Recharts]
+Soil information can also be correlated with vegetation-health data to provide more meaningful agricultural recommendations.
+
+---
+
+### 🌦️ Weather Intelligence
+
+CropEye combines multiple meteorological sources to provide both short-term agricultural weather information and broader climate context.
+
+Supported sources include:
+
+- OpenWeather
+- Open-Meteo
+- Copernicus climate/reanalysis data
+
+Weather parameters include:
+
+- Temperature
+- Humidity
+- Precipitation
+- Wind speed
+- Solar/weather-related conditions
+
+Agricultural analysis can additionally derive indicators such as:
+
+- Growing Degree Days (GDD)
+- Frost risk
+- Heat-stress risk
+- Historical weather trends
+
+---
+
+### 🌾 Crop Recommendations
+
+CropEye combines environmental conditions from multiple modules to evaluate crop suitability.
+
+Inputs can include:
+
+```text
+Soil Properties
+      +
+Weather Conditions
+      +
+Vegetation Health
+      ↓
+Crop Suitability Analysis
+      ↓
+Crop Recommendations
+```
+
+The recommendation module uses multi-factor environmental information rather than relying on a single parameter.
+
+---
+
+### 💧 Water Management
+
+The water-management module estimates crop water requirements using soil and weather conditions.
+
+It supports:
+
+- Reference evapotranspiration analysis
+- Penman–Monteith ET₀ calculation
+- Crop-specific water requirements
+- Irrigation scheduling
+- Water-stress assessment
+
+This provides a foundation for data-driven irrigation decisions.
+
+---
+
+### 🐛 Pest & Disease Risk
+
+CropEye evaluates environmental conditions associated with pest and disease development.
+
+Inputs such as:
+
+- Temperature
+- Humidity
+- Crop type
+
+are used to generate risk assessments and agricultural management recommendations.
+
+---
+
+## 🏗️ System Architecture
+
+CropEye follows a modular architecture consisting of four primary layers:
+
+**Dashboard Client → Backend Gateway → Agricultural Analytics → External Data Providers**
+
+```mermaid
+flowchart TD
+
+subgraph group_client["Dashboard Client"]
+  node_app["React App<br/>[App.tsx]"]
+  node_auth["Auth Context<br/>[AuthContext.tsx]"]
+  node_location["Location Context"]
+  node_api_client["API Client<br/>[apiClient.ts]"]
+  node_insight_pages["Insight Pages<br/>[DashboardPage.tsx]"]
+end
+
+subgraph group_backend["Backend Gateway"]
+  node_backend_app["Dashboard API<br/>[app.py]"]
+  node_api_gateway["Module Gateway<br/>[api_gateway.py]"]
+end
+
+subgraph group_analytics["Agricultural Analytics"]
+  node_ndvi["NDVI Analysis"]
+  node_soil["Soil Analysis"]
+  node_weather["Weather Analysis"]
+  node_crop["Crop Recommendations"]
+  node_water["Water Management"]
+  node_pest["Pest Risk"]
+end
+
+subgraph group_integrations["External Data"]
+  node_sentinel["Sentinel Data"]
+  node_soilgrids["SoilGrids API"]
+  node_openweather["OpenWeather API"]
+  node_openmeteo["Open-Meteo API"]
+  node_copernicus_weather["Copernicus Weather"]
+end
+
+node_farmer(("Farmer"))
+
+node_farmer -->|"opens dashboard"| node_app
+node_app -->|"checks session"| node_auth
+node_app -->|"provides location"| node_location
+node_app -->|"requests analytics"| node_api_client
+
+node_api_client -->|"sends requests"| node_backend_app
+
+node_backend_app -->|"proxies analysis"| node_ndvi
+node_backend_app -->|"proxies analysis"| node_soil
+node_backend_app -->|"proxies analysis"| node_weather
+
+node_api_gateway -->|"calls module"| node_ndvi
+node_api_gateway -->|"calls module"| node_soil
+node_api_gateway -->|"calls module"| node_weather
+node_api_gateway -->|"calls module"| node_water
+node_api_gateway -->|"calls module"| node_crop
+node_api_gateway -->|"calls module"| node_pest
+
+node_api_client -->|"returns insights"| node_insight_pages
+
+node_ndvi -->|"downloads imagery"| node_sentinel
+node_soil -->|"reads soil maps"| node_soilgrids
+node_weather -->|"reads forecasts"| node_openweather
+node_weather -.->|"reads climate data"| node_openmeteo
+node_weather -.->|"reads reanalysis"| node_copernicus_weather
+
+click node_app "https://github.com/simplyaksh18/cropeye/blob/main/frontend/src/App.tsx"
+click node_auth "https://github.com/simplyaksh18/cropeye/blob/main/frontend/src/context/AuthContext.tsx"
+click node_location "https://github.com/simplyaksh18/cropeye/blob/main/frontend/src/context/LocationContext.tsx"
+click node_api_client "https://github.com/simplyaksh18/cropeye/blob/main/frontend/src/services/apiClient.ts"
+click node_insight_pages "https://github.com/simplyaksh18/cropeye/blob/main/frontend/src/pages/DashboardPage.tsx"
+
+click node_backend_app "https://github.com/simplyaksh18/cropeye/blob/main/backend/app.py"
+click node_api_gateway "https://github.com/simplyaksh18/cropeye/blob/main/backend/GIS/api_gateway.py"
+
+click node_ndvi "https://github.com/simplyaksh18/cropeye/blob/main/backend/GIS/NDVI/ndvi_flask_backend.py"
+click node_soil "https://github.com/simplyaksh18/cropeye/blob/main/backend/GIS/Soil/soil_flask_backend.py"
+click node_weather "https://github.com/simplyaksh18/cropeye/blob/main/backend/GIS/Weather/weather_flask_backend.py"
+click node_crop "https://github.com/simplyaksh18/cropeye/blob/main/backend/GIS/Crop/crop_flask_backend.py"
+click node_water "https://github.com/simplyaksh18/cropeye/blob/main/backend/GIS/Water/water_flask_backend.py"
+click node_pest "https://github.com/simplyaksh18/cropeye/blob/main/backend/GIS/Pest/pest_flask_backend.py"
+
+classDef toneBlue fill:#dbeafe,stroke:#2563eb,stroke-width:1.5px,color:#172554
+classDef toneAmber fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#78350f
+classDef toneMint fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#14532d
+classDef toneRose fill:#ffe4e6,stroke:#e11d48,stroke-width:1.5px,color:#881337
+classDef toneIndigo fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#312e81
+
+class node_app,node_auth,node_location,node_api_client,node_insight_pages toneBlue
+class node_backend_app,node_api_gateway toneAmber
+class node_ndvi,node_soil,node_weather,node_crop,node_water,node_pest toneMint
+class node_sentinel,node_soilgrids,node_openweather,node_openmeteo,node_copernicus_weather toneRose
+class node_farmer toneIndigo
+```
+
+> **Tip:** The architecture diagram is interactive when viewed on GitHub. Several components link directly to their corresponding implementation files.
+
+---
+
+## 🔄 How CropEye Works
+
+A typical CropEye request follows this flow:
+
+```text
+Farmer
+   ↓
+React Dashboard
+   ↓
+Location Context
+   ↓
+Frontend API Client
+   ↓
+Python Backend Gateway
+   ↓
+Agricultural Analytics Module
+   ↓
+External Environmental Data
+   ↓
+Analysis / Calculation
+   ↓
+Dashboard Insight
+```
+
+### 1. Farmer opens the dashboard
+
+The React application provides the main interface for interacting with CropEye.
+
+### 2. Authentication and location context are established
+
+`AuthContext.tsx` manages authentication/session-related state while the location context provides geographic information required by the analytical modules.
+
+### 3. Dashboard requests agricultural intelligence
+
+The frontend API client sends requests to the Python backend based on the selected analysis.
+
+### 4. Backend routes the request
+
+The backend application and GIS module gateway coordinate requests to the appropriate agricultural-analysis service.
+
+### 5. The selected module performs its analysis
+
+Depending on the request, CropEye invokes:
+
+```text
+NDVI
+Soil
+Weather
+Crop Recommendation
+Water Management
+or
+Pest Risk
+```
+
+### 6. External environmental information is retrieved
+
+Individual modules communicate with their required data providers.
+
+For example:
+
+```text
+NDVI    → Sentinel-2
+Soil    → SoilGrids
+Weather → OpenWeather / Open-Meteo / Copernicus
+```
+
+### 7. Results return to the dashboard
+
+Processed agricultural information is returned through the backend and API client to the dashboard for presentation to the farmer.
+
+---
+
+## 🧩 Agricultural Analytics Modules
+
+| Module | Purpose | Primary Inputs |
+|---|---|---|
+| 🛰️ NDVI | Vegetation-health analysis | Sentinel-2 imagery |
+| 🌱 Soil | Soil-property and fertility analysis | SoilGrids + location |
+| 🌦️ Weather | Weather and agricultural climate indicators | Weather/climate APIs |
+| 🌾 Crop | Crop-suitability recommendations | Soil + weather + NDVI |
+| 💧 Water | Irrigation and water-requirement analysis | Weather + soil + crop |
+| 🐛 Pest | Pest and disease risk assessment | Temperature + humidity + crop |
+
+The modular design keeps each analytical domain logically separated while allowing information from multiple modules to contribute to higher-level recommendations.
+
+---
+
+## 🔌 API Modules
+
+### 🛰️ NDVI Analysis
+
+**Service:** Port `5001`
+
+```http
+POST /api/ndvi/analyze
+```
+
+Processes latitude and longitude information to perform location-specific vegetation analysis.
+
+Primary external source:
+
+**Copernicus Sentinel-2**
+
+---
+
+### 🌱 Soil Analysis
+
+**Service:** Port `5002`
+
+```http
+POST /api/soil/analyze
+```
+
+Retrieves and analyses soil properties for a geographic location and can correlate them with vegetation information.
+
+Primary external source:
+
+**ISRIC SoilGrids**
+
+---
+
+### 🌦️ Weather Analysis
+
+**Service:** Port `5003`
+
+```http
+GET /api/weather/current
+GET /api/weather/agricultural
+```
+
+Provides weather information and farming-specific environmental indicators.
+
+Data sources include:
+
+- OpenWeather
+- Open-Meteo
+- Copernicus climate/reanalysis data
+
+---
+
+### 🌾 Crop Recommendation
+
+**Service:** Port `5004`
+
+```http
+POST /api/crop/recommend
+```
+
+Combines environmental parameters to produce crop-suitability recommendations.
+
+---
+
+### 💧 Water Management
+
+**Service:** Port `5005`
+
+```http
+POST /api/water/calculate
+```
+
+Uses weather, soil, crop type, and growth-stage information for irrigation and water-management calculations.
+
+---
+
+### 🐛 Pest & Disease Assessment
+
+**Service:** Port `5006`
+
+```http
+POST /api/pests/assess
+```
+
+Evaluates environmental conditions to estimate pest and disease risk.
+
+---
+
+## 🌐 External Data Integrations
+
+### Copernicus Sentinel-2
+
+Used for multispectral vegetation analysis and NDVI calculation.
+
+```text
+Sentinel-2 Level-2A
+Band 8 (NIR)
+Band 4 (Red)
+        ↓
+      NDVI
+```
+
+### ISRIC SoilGrids
+
+Provides global soil-property information used by the soil-analysis module.
+
+### OpenWeather
+
+Provides current and forecast meteorological information used for weather and agricultural calculations.
+
+### Open-Meteo
+
+Provides additional meteorological and historical weather information.
+
+### Copernicus Climate Data
+
+Provides climate and reanalysis information that can support longer-term agricultural environmental analysis.
+
+---
+
+## 🧰 Technology Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React |
+| Frontend Language | TypeScript / TSX |
+| Backend | Python |
+| API Services | Flask-based services |
+| GIS / Raster Analysis | Python geospatial processing |
+| Satellite Data | Copernicus Sentinel-2 |
+| Soil Data | ISRIC SoilGrids |
+| Weather Data | OpenWeather |
+| Additional Weather | Open-Meteo |
+| Climate / Reanalysis | Copernicus |
+| Styling | Tailwind CSS |
+| Deployment Configuration | Render |
+| Version Control | Git & GitHub |
+
+---
+
+## 📂 Project Structure
+
+```text
+CropEye/
+│
+├── frontend/
+│   └── src/
+│       ├── App.tsx
+│       │
+│       ├── context/
+│       │   ├── AuthContext.tsx
+│       │   └── LocationContext.tsx
+│       │
+│       ├── services/
+│       │   └── apiClient.ts
+│       │
+│       └── pages/
+│           └── DashboardPage.tsx
+│
+├── backend/
+│   ├── app.py
+│   │
+│   └── GIS/
+│       ├── api_gateway.py
+│       │
+│       ├── NDVI/
+│       │   └── ndvi_flask_backend.py
+│       │
+│       ├── Soil/
+│       │   └── soil_flask_backend.py
+│       │
+│       ├── Weather/
+│       │   └── weather_flask_backend.py
+│       │
+│       ├── Crop/
+│       │   └── crop_flask_backend.py
+│       │
+│       ├── Water/
+│       │   └── water_flask_backend.py
+│       │
+│       └── Pest/
+│           └── pest_flask_backend.py
+│
+├── requirements.txt
+├── render.yaml
+├── LICENSE
+└── README.md
+```
+
+---
+
+## 🛰️ Real & Simulated Data Strategy
+
+CropEye is designed to work with a combination of **open environmental datasets, external APIs, and simulated agricultural data**.
+
+### Real-world/open data
+
+Satellite and environmental services provide location-based information such as:
+
+- Sentinel-2 multispectral imagery
+- SoilGrids soil-property maps
+- Weather forecasts
+- Historical meteorological information
+- Climate/reanalysis datasets
+
+### Simulation
+
+Where physical field sensors or drone hardware are unavailable, simulated data can represent agricultural measurements and demonstrate the data-processing workflow.
+
+This allows the software architecture and analytical pipeline to be developed and evaluated without claiming that physical IoT infrastructure is already deployed.
+
+---
+
+## 🎯 Project Objectives
+
+CropEye aims to demonstrate how GIS and environmental data can be combined to support precision-agriculture decisions.
+
+The project focuses on:
+
+- Converting geospatial data into understandable agricultural insights
+- Combining multiple environmental data sources
+- Monitoring vegetation health
+- Analysing soil conditions
+- Providing weather-aware agricultural intelligence
+- Supporting crop-selection decisions
+- Improving irrigation planning
+- Identifying environmental pest and disease risks
+- Building a modular platform that can accommodate additional agricultural models and data sources
+
+---
+
+## 🚀 Future Scope
+
+CropEye provides a foundation that can be extended with:
+
+- Live IoT soil-moisture sensors
+- In-field weather stations
+- Drone imagery ingestion
+- Field-boundary management
+- Persistent farm and field profiles
+- Historical farm analytics
+- Automated satellite-scene monitoring
+- Push notifications and agricultural alerts
+- Machine-learning crop-yield prediction
+- Advanced pest and disease models
+- Irrigation automation
+- Multi-farm management
+- Offline/mobile access
+- Farmer-specific recommendation history
+
+The modular analytics architecture allows these capabilities to be introduced without tightly coupling them to the dashboard.
+
+---
+
+## 🌍 Why CropEye?
+
+Agricultural decisions rarely depend on a single variable.
+
+Crop health can be affected simultaneously by:
+
+```text
+Vegetation Condition
+        +
+Soil Properties
+        +
+Weather
+        +
+Water Availability
+        +
+Pest Pressure
+        ↓
+Agricultural Decision
+```
+
+CropEye brings these signals into a common analytical workflow.
+
+Rather than functioning as only a weather dashboard or an NDVI viewer, the project demonstrates how **GIS, remote sensing, environmental APIs, and agricultural models can work together as a decision-support platform for precision agriculture.**
+
+---
+
+## ⚠️ Project Scope
+
+CropEye is an academic and prototype precision-agriculture platform.
+
+Analytical outputs and recommendations should be treated as decision-support information rather than a replacement for professional agronomic advice, field inspection, or validated production agricultural systems.
+
+External-data accuracy and availability depend on their respective providers.
+
+---
+
+## 🤝 Contributing
+
+Contributions, suggestions, and improvements are welcome.
+
+Potential contribution areas include:
+
+- GIS processing
+- Agricultural modelling
+- Remote sensing
+- Frontend visualization
+- API development
+- Weather analytics
+- Soil analytics
+- Crop recommendation models
+
+Fork the repository, create a feature branch, and submit a pull request with a clear description of the proposed change.
+
+---
+
+## 📄 License
+
+This project is distributed under the **MIT License**.
+
+See the `LICENSE` file for details.
+
+---
+
+## 👨‍💻 Repository
+
+Explore the complete implementation:
+
+**GitHub:** `Simplyaksh18/CropEye`
+
+---
+
+### 🌾 CropEye
+
+**Satellite intelligence. Environmental analytics. Better-informed farming decisions.**
